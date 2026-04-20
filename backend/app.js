@@ -29,15 +29,14 @@ app.get('/api/health', function(req, res) {
   });
 });
 
-app.use('/api/auth',     require('./src/modules/auth/auth.routes'));
-app.use('/api/students', require('./src/modules/students/students.routes'));
-app.use('/api/classes',  require('./src/modules/classes/classes.routes'));
-app.use('/api/subjects', require('./src/modules/subjects/subjects.routes'));
-app.use('/api/results',  require('./src/modules/results/results.routes'));
-app.use('/api/payments', require('./src/modules/payments/payments.routes'));
-app.use('/api/messages', require('./src/modules/messages/messages.routes'));
-
-// Stage 8: app.use('/api/analytics', require('./src/modules/analytics/analytics.routes'));
+app.use('/api/auth',      require('./src/modules/auth/auth.routes'));
+app.use('/api/students',  require('./src/modules/students/students.routes'));
+app.use('/api/classes',   require('./src/modules/classes/classes.routes'));
+app.use('/api/subjects',  require('./src/modules/subjects/subjects.routes'));
+app.use('/api/results',   require('./src/modules/results/results.routes'));
+app.use('/api/payments',  require('./src/modules/payments/payments.routes'));
+app.use('/api/messages',  require('./src/modules/messages/messages.routes'));
+app.use('/api/analytics', require('./src/modules/analytics/analytics.routes'));
 
 app.all('/{*path}', function(req, res, next) {
   next(new ApiError(404, 'Route ' + req.method + ' ' + req.originalUrl + ' not found'));
