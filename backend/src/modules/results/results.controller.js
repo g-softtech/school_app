@@ -1,4 +1,5 @@
 const Result  = require('../../models/Result');
+const notifSvc = require('../../../services/notificationService');
 const Student = require('../../models/Student');
 const Subject = require('../../models/Subject');
 const Class   = require('../../models/Class');
@@ -64,6 +65,9 @@ exports.uploadResult = catchAsync(async function(req, res, next) {
     .populate('subjectId', 'name code')
     .populate('classId',   'name section')
     .populate('uploadedBy','name');
+
+  // Fire notification (non-blocking)
+  notifSvc.onResultsPublished(result.studentId, result.term, result.session).catch(() => {});
 
   res.status(200).json({ success: true, message: 'Result uploaded successfully', data: result });
 });

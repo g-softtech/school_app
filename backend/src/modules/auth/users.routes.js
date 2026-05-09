@@ -28,13 +28,16 @@ router.get('/directory', protect, catchAsync(async function(req, res) {
   var nameFilter = search ? { name: { $regex: search, $options: 'i' } } : {};
   var users = [];
 
-  // ── ADMIN → everyone ──────────────────────────────────────────────────────
+  // ── ADMIN → everyone (or filtered by ?role=) ───────────────────────────
   if (me.role === 'admin') {
+    var roleFilter = req.query.role
+      ? { role: req.query.role }
+      : { role: { $in: ['admin', 'teacher', 'student', 'parent'] } };
     users = await User.find({
-      _id:  { $ne: me._id },
-      role: { $in: ['admin', 'teacher', 'student', 'parent'] },
+      _id: { $ne: me._id },
+      ...roleFilter,
       ...nameFilter,
-    }, 'name email role').sort({ role: 1, name: 1 }).limit(limit);
+    }, 'name email role').sort({ name: 1 }).limit(limit);
   }
 
   // ── TEACHER → students & parents in their classes + admins ───────────────

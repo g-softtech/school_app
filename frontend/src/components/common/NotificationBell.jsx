@@ -4,12 +4,12 @@ import { useNotifications } from '../../context/NotificationContext';
 import { formatDateTime } from '../../utils/helpers';
 
 const TYPE_CONFIG = {
-  result:       { icon: FiAward,         color: 'text-blue-500',   bg: 'bg-blue-50'   },
-  payment:      { icon: FiCreditCard,    color: 'text-green-600',  bg: 'bg-green-50'  },
-  announcement: { icon: FiBell,          color: 'text-primary-500',bg: 'bg-primary-50'},
-  message:      { icon: FiMessageSquare, color: 'text-purple-500', bg: 'bg-purple-50' },
-  alert:        { icon: FiAlertCircle,   color: 'text-red-500',    bg: 'bg-red-50'    },
-  general:      { icon: FiInfo,          color: 'text-secondary-500', bg: 'bg-secondary-100' },
+  result:       { icon: FiAward,         color: 'text-blue-500',    bg: 'bg-blue-50'    },
+  payment:      { icon: FiCreditCard,    color: 'text-green-600',   bg: 'bg-green-50'   },
+  announcement: { icon: FiBell,          color: 'text-primary-500', bg: 'bg-primary-50' },
+  message:      { icon: FiMessageSquare, color: 'text-purple-500',  bg: 'bg-purple-50'  },
+  alert:        { icon: FiAlertCircle,   color: 'text-red-500',     bg: 'bg-red-50'     },
+  general:      { icon: FiInfo,          color: 'text-secondary-500',bg:'bg-secondary-100'},
 };
 
 export default function NotificationBell() {
@@ -26,39 +26,33 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const handleOpen = () => setOpen((v) => !v);
-
-  const handleMarkRead = (e, id) => {
-    e.stopPropagation();
-    markAsRead(id);
-  };
-
-  const handleDelete = (e, id) => {
-    e.stopPropagation();
-    deleteNotification(id);
-  };
-
-  const handleMarkAll = () => markAllAsRead();
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   return (
     <div className="relative" ref={panelRef}>
       {/* Bell button */}
       <button
-        onClick={handleOpen}
+        onClick={() => setOpen(v => !v)}
         className="relative p-2 rounded-lg hover:bg-secondary-100 text-secondary-500 transition-colors"
         aria-label="Notifications"
       >
         <FiBell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+          <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none animate-pulse-dot">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Dropdown panel */}
+      {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-secondary-100 z-50 overflow-hidden">
+        <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-secondary-100 z-50 overflow-hidden notif-dropdown">
+
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-secondary-100">
             <div className="flex items-center gap-2">
@@ -72,11 +66,10 @@ export default function NotificationBell() {
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
-                  onClick={handleMarkAll}
+                  onClick={markAllAsRead}
                   className="text-xs text-primary-500 hover:text-primary-600 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-primary-50 transition-colors"
-                  title="Mark all as read"
                 >
-                  <FiCheck size={13} /> All read
+                  <FiCheck size={12} /> All read
                 </button>
               )}
               <button onClick={() => setOpen(false)} className="p-1 hover:bg-secondary-100 rounded-lg transition-colors">
@@ -101,12 +94,9 @@ export default function NotificationBell() {
                     className={`flex items-start gap-3 px-4 py-3 hover:bg-secondary-50 transition-colors cursor-pointer group ${!n.isRead ? 'bg-blue-50/40' : ''}`}
                     onClick={() => !n.isRead && markAsRead(n._id)}
                   >
-                    {/* Icon */}
                     <div className={`w-8 h-8 rounded-xl ${cfg.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
                       <cfg.icon size={14} className={cfg.color} />
                     </div>
-
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm leading-tight ${!n.isRead ? 'font-semibold text-secondary-800' : 'text-secondary-700'}`}>
                         {n.title}
@@ -114,12 +104,10 @@ export default function NotificationBell() {
                       <p className="text-xs text-secondary-500 mt-0.5 line-clamp-2">{n.message}</p>
                       <p className="text-xs text-secondary-400 mt-1">{formatDateTime(n.createdAt)}</p>
                     </div>
-
-                    {/* Actions */}
                     <div className="flex flex-col gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       {!n.isRead && (
                         <button
-                          onClick={(e) => handleMarkRead(e, n._id)}
+                          onClick={(e) => { e.stopPropagation(); markAsRead(n._id); }}
                           className="p-1 hover:bg-blue-100 rounded-md transition-colors"
                           title="Mark as read"
                         >
@@ -127,15 +115,13 @@ export default function NotificationBell() {
                         </button>
                       )}
                       <button
-                        onClick={(e) => handleDelete(e, n._id)}
+                        onClick={(e) => { e.stopPropagation(); deleteNotification(n._id); }}
                         className="p-1 hover:bg-red-100 rounded-md transition-colors"
                         title="Delete"
                       >
                         <FiTrash2 size={12} className="text-red-400" />
                       </button>
                     </div>
-
-                    {/* Unread dot */}
                     {!n.isRead && (
                       <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
                     )}
@@ -148,7 +134,9 @@ export default function NotificationBell() {
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="border-t border-secondary-100 px-4 py-2.5 text-center">
-              <p className="text-xs text-secondary-400">{notifications.length} notification{notifications.length !== 1 ? 's' : ''} loaded</p>
+              <p className="text-xs text-secondary-400">
+                {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+              </p>
             </div>
           )}
         </div>

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import { FiArrowRight, FiAward, FiBook, FiUsers, FiBarChart2, FiCheckCircle, FiCpu, FiMessageSquare, FiCreditCard, FiStar } from 'react-icons/fi';
 
 // African education images via Unsplash (free, no auth needed)
@@ -9,10 +11,10 @@ const IMG = {
   campus:    'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80',  // School building
 };
 
-const STATS = [
-  { value: '2,500+', label: 'Students Enrolled' },
-  { value: '120+',   label: 'Qualified Teachers' },
-  { value: '98%',    label: 'Pass Rate (2024)' },
+const DEFAULT_STATS = [
+  { value: '2,500+', label: 'Students Enrolled'   },
+  { value: '120+',   label: 'Qualified Teachers'  },
+  { value: '98%',    label: 'Pass Rate (2024)'    },
   { value: '15+',    label: 'Years of Excellence' },
 ];
 
@@ -55,6 +57,24 @@ function SectionLabel({ children }) {
 }
 
 export default function Home() {
+  const [stats, setStats] = useState(DEFAULT_STATS);
+
+  useEffect(() => {
+    api.get('/contact/stats')
+      .then((res) => {
+        const d = res.data.data;
+        if (d) {
+          setStats([
+            { value: d.students > 0 ? `${d.students.toLocaleString()}+` : '2,500+', label: 'Students Enrolled'   },
+            { value: d.teachers > 0 ? `${d.teachers}+`                 : '120+',   label: 'Qualified Teachers'  },
+            { value: d.passRate  > 0 ? `${d.passRate}%`                : '98%',    label: 'Pass Rate'           },
+            { value: `${d.yearsOfExcellence}+`,                                    label: 'Years of Excellence' },
+          ]);
+        }
+      })
+      .catch(() => {}); // silently use defaults if API fails
+  }, []);
+
   return (
     <div className="pt-16 lg:pt-20">
 
@@ -102,7 +122,7 @@ export default function Home() {
       <section className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {STATS.map((s) => (
+            {stats.map((s) => (
               <div key={s.label} className="text-center p-6 rounded-2xl border border-secondary-100 hover:border-primary-200 hover:shadow-card-md transition-all duration-300">
                 <p className="text-3xl lg:text-4xl font-bold text-primary-500 mb-1">{s.value}</p>
                 <p className="text-sm text-secondary-500 font-medium">{s.label}</p>

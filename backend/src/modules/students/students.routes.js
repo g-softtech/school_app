@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { createStudent, getAllStudents, getStudent, getMyProfile, getMyChild, updateStudent, deleteStudent } = require('./students.controller');
+const { createStudent, getAllStudents, getStudent, getMyProfile, getMyChild, promoteStudents, updateStudent, deleteStudent } = require('./students.controller');
 const protect = require('../../middleware/authMiddleware');
 const restrictTo = require('../../middleware/roleMiddleware');
 
 router.use(protect);
 
 router.get('/me',       restrictTo('student'), getMyProfile);
-router.get('/my-child', restrictTo('parent'),  getMyChild);
+router.get('/my-child',   restrictTo('parent'),  getMyChild);
+router.post('/promote',   restrictTo('admin'),   promoteStudents);
 router.get('/',         restrictTo('admin', 'teacher'), getAllStudents);
 router.post('/',        restrictTo('admin'), createStudent);
 router.get('/:id',      restrictTo('admin', 'teacher', 'student'), getStudent);

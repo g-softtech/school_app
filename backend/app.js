@@ -60,7 +60,9 @@ app.use('/api/weekly-planner', require('./src/modules/weeklyPlanner/weeklyPlanne
 // ── Extension routes ──────────────────────────────────────────────────────────
 app.use('/api/notifications',  require('./src/modules/notifications/notifications.routes'));
 app.use('/api/ai',             require('./src/modules/ai/ai.routes'));
-app.use('/api/audit-logs',     require('./src/modules/auditLogs/auditLogs.routes'));
+app.use('/api/audit-logs',        require('./src/modules/auditLogs/auditLogs.routes'));
+app.use('/api/academic-sessions', require('./src/modules/academicSession/academicSession.routes'));
+app.use('/api/timetable',         require('./src/modules/timetable/timetable.routes'));
 
 // ── ID card + shareable result (standalone endpoints) ─────────────────────────
 var protect    = require('./src/middleware/authMiddleware');
@@ -73,7 +75,8 @@ app.get('/api/results/share/:token', viewSharedResult);
 app.post('/api/results/share-token', protect, generateShareToken);
 
 // ── Users directory (for messaging user picker) ──────────────────────────────
-app.use('/api/users', require('./src/modules/auth/users.routes'));
+app.use('/api/users',   require('./src/modules/auth/users.routes'));
+app.use('/api/contact', require('./src/modules/contact/contact.routes'));
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.all('/{*path}', function(req, res, next) {

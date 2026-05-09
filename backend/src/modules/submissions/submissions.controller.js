@@ -94,6 +94,12 @@ exports.gradeSubmission = catchAsync(async function(req, res, next) {
     return next(new ApiError(400, 'Score cannot exceed maximum score of ' + assignment.maxScore));
   }
 
+  // Fire assignment graded notification (non-blocking)
+  notifSvc.onAssignmentGraded(
+    submission.studentId, assignment.title,
+    Number(score), assignment.maxScore, feedback || null
+  ).catch(() => {});
+
   var updated = await Submission.findByIdAndUpdate(
     req.params.id,
     { score: Number(score), feedback: feedback || null, status: 'graded', gradedAt: new Date(), gradedBy: req.user._id },

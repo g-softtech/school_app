@@ -1,4 +1,5 @@
 const Payment  = require('../../models/Payment');
+const notifSvc         = require('../../../services/notificationService');
 const Student  = require('../../models/Student');
 const User     = require('../../models/User');
 const ApiError = require('../../utils/ApiError');
@@ -95,6 +96,12 @@ exports.verifyPayment = catchAsync(async function(req, res, next) {
 
   // Generate receipt number and mark as paid
   var receiptNumber = await generateReceiptNumber();
+
+  // Fire payment notification after successful update
+  notifSvc.onPaymentConfirmed(
+    payment.studentId, payment.amount, payment.feeType,
+    payment.term, receiptNumber
+  ).catch(() => {});
 
   var updated = await Payment.findByIdAndUpdate(
     payment._id,

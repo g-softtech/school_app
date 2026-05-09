@@ -4,7 +4,7 @@ import {
   FiBookOpen, FiHome, FiUsers, FiBook, FiClipboard,
   FiBarChart2, FiCreditCard, FiMessageSquare,
   FiCalendar, FiFileText, FiAward, FiLogOut, FiCpu,
-  FiActivity, FiList, FiUserCheck,FiDownload,
+  FiActivity, FiList, FiUserCheck,FiInbox, FiGrid, FiArrowRight, FiBell, FiDownload
 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { logoutUser } from '../../services/authService';
@@ -21,6 +21,10 @@ const NAV_ITEMS = {
     { to: '/admin/payments',   icon: FiCreditCard,    label: 'Payments' },
     { to: '/admin/messages',   icon: FiMessageSquare, label: 'Messages' },
     { to: '/admin/analytics',  icon: FiBarChart2,     label: 'Analytics' },
+    { to: '/admin/admissions', icon: FiInbox,         label: 'Admissions' },
+    { to: '/admin/sessions',   icon: FiCalendar,      label: 'Sessions & Terms' },
+    { to: '/admin/timetable',  icon: FiGrid,          label: 'Timetable' },
+    { to: '/admin/promote',    icon: FiArrowRight,    label: 'Class Promotion' },
     { to: '/admin/audit-logs', icon: FiList,          label: 'Audit Logs' },
   ],
   teacher: [
@@ -30,8 +34,9 @@ const NAV_ITEMS = {
     { to: '/teacher/assignments',   icon: FiClipboard,     label: 'Assignments' },
     { to: '/teacher/results',       icon: FiAward,         label: 'Results' },
     { to: '/teacher/planner',       icon: FiCalendar,      label: 'Weekly Planner' },
-    { to: '/teacher/messages',      icon: FiMessageSquare, label: 'Messages' },
-    { to: '/teacher/ai',            icon: FiCpu,           label: 'AI Generator' },
+    { to: '/teacher/messages',       icon: FiMessageSquare, label: 'Messages' },
+    { to: '/teacher/announcements',  icon: FiBell,          label: 'Announcements' },
+    { to: '/teacher/ai',             icon: FiCpu,           label: 'AI Generator' },
   ],
   student: [
     { to: '/student',               icon: FiHome,          label: 'Dashboard' },
@@ -39,14 +44,16 @@ const NAV_ITEMS = {
     { to: '/student/lesson-notes',  icon: FiFileText,      label: 'Lesson Notes' },
     { to: '/student/assignments',   icon: FiClipboard,     label: 'Assignments' },
     { to: '/student/analytics',     icon: FiActivity,      label: 'My Progress' },
-    { to: '/student/downloads',     icon: FiDownload,      label: 'Downloads' },
-    { to: '/student/messages',      icon: FiMessageSquare, label: 'Messages' },
+    { to: '/student/downloads',       icon: FiDownload,      label: 'Downloads' },
+    { to: '/student/announcements',   icon: FiBell,          label: 'Announcements' },
+    { to: '/student/messages',        icon: FiMessageSquare, label: 'Messages' },
   ],
   parent: [
     { to: '/parent',          icon: FiHome,          label: 'Dashboard' },
     { to: '/parent/results',  icon: FiAward,         label: "Child's Results" },
     { to: '/parent/payments', icon: FiCreditCard,    label: 'Fee Payments' },
-    { to: '/parent/messages', icon: FiMessageSquare, label: 'Messages' },
+    { to: '/parent/messages',       icon: FiMessageSquare, label: 'Messages' },
+    { to: '/parent/announcements',  icon: FiBell,          label: 'Announcements' },
   ],
 };
 
@@ -71,17 +78,17 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 lg:hidden animate-fade-in"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar panel */}
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-secondary-800 flex flex-col z-30
-        transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 h-full w-64 bg-secondary-900 flex flex-col z-30
+        transition-transform duration-300 cubic-bezier(0.4,0,0.2,1)
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:z-auto
+        lg:translate-x-0 lg:static lg:z-auto lg:shadow-2xl
       `}>
 
         {/* Logo */}
@@ -104,7 +111,7 @@ export default function Sidebar({ isOpen, onClose }) {
               end={item.to === `/${user?.role}`}
               onClick={onClose}
               className={({ isActive }) =>
-                `nav-item ${isActive ? 'nav-item-active' : 'nav-item-inactive'}`
+                `nav-item transition-all duration-200 ${isActive ? 'nav-item-active shadow-sm shadow-primary-900/30' : 'nav-item-inactive hover:translate-x-0.5'}`
               }
             >
               <item.icon size={17} className="flex-shrink-0" />

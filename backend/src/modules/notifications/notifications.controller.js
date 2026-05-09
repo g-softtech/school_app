@@ -71,6 +71,20 @@ exports.sendNotification = catchAsync(async function(req, res, next) {
   var userIds = users.map(function(u) { return u._id; });
   await createBulkNotifications(userIds, title, message, type);
 
+  // Optionally send email too (opt-in via sendEmail: true in request body)
+  if (req.body.sendEmail) {
+    var { sendEmail: sendEmailFn } = require('../../../services/emailService');
+    for (var u of users) {
+      if (u.email) {
+        await sendEmailFn({
+          to: u.email,
+          subject: title + ' — SmartSchool',
+          html: '<p>Dear ' + u.name + ',</p><p>' + message + '</p><p>SmartSchool Management System</p>',
+        }).catch(() => {});
+      }
+    }
+  }
+
   res.status(201).json({ success: true, message: 'Notification sent to ' + users.length + ' ' + targetRole + '(s)' });
 });
 

@@ -1,5 +1,6 @@
-const User = require('../../models/User');
+const User    = require('../../models/User');
 const Student = require('../../models/Student');
+const Class   = require('../../models/Class');
 const ApiError = require('../../utils/ApiError');
 const catchAsync = require('../../utils/catchAsync');
 const paginate = require('../../utils/paginate');
@@ -144,4 +145,38 @@ exports.getMyChild = catchAsync(async function(req, res, next) {
 
   if (!student) return next(new ApiError(404, 'No child linked to your account. Contact the school admin.'));
   res.status(200).json({ success: true, data: student });
+});
+
+// POST /api/students/promote
+// Body: { fromClassId, toClassId, studentIds?: [] }
+// Moves all (or selected) students from one class to another
+exports.promoteStudents = catchAsync(async function(req, res, next) {
+  var fromClassId = req.body.fromClassId;
+  var toClassId   = req.body.toClassId;
+  var studentIds  = req.body.studentIds; // optional array — if omitted promote ALL
+
+  if (!fromClassId || !toClassId) {
+    return next(new ApiError(400, 'fromClassId and toClassId are required'));
+  }
+  if (fromClassId === toClassId) {
+    return next(new ApiError(400, 'Source and destination class cannot be the same'));
+  }
+
+  var fromClass = await Class.findById(fromClassId);
+  var toClass   = await Class.findById(toClassId);
+  if (!fromClass) return next(new ApiError(404, 'Source class not found'));
+  if (!toClass)   return next(new ApiError(404, 'Destination class not found'));
+
+  var filter = { classId: fromClassId, isActive: true };
+  if (studentIds && studentIds.length > 0) {
+    filter._id = { $in: studentIds };
+  }
+
+  var result = await Student.updateMany(filter, { classId: toClassId });
+
+  res.status(200).json({
+    success: true,
+    message: result.modifiedCount + ' student(s) promoted from ' + (fromClass.name + ' ' + (fromClass.section||'')).trim() + ' to ' + (toClass.name + ' ' + (toClass.section||'')).trim(),
+    data: { promoted: result.modifiedCount, fromClass: (fromClass.name + ' ' + (fromClass.section||'')).trim(), toClass: (toClass.name + ' ' + (toClass.section||'')).trim() },
+  });
 });

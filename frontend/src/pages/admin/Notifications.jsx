@@ -38,7 +38,7 @@ const TYPE_COLOR = {
   general:      'bg-secondary-100 text-secondary-600',
 };
 
-const EMPTY_FORM = { title: '', message: '', targetRole: 'student', type: 'announcement' };
+const EMPTY_FORM = { title: '', message: '', targetRole: 'student', type: 'announcement', sendEmail: false };
 
 export default function AdminNotifications() {
   const { unreadCount, refresh } = useNotifications();
@@ -139,6 +139,13 @@ export default function AdminNotifications() {
         <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
           <FiRadio size={15} /> Send Notification
         </button>
+      </div>
+
+      {/* Quick link to view received notifications */}
+      <div className="flex gap-1 bg-secondary-100 p-1 rounded-xl w-fit mb-0">
+        <div className="px-4 py-1.5 rounded-lg text-sm font-medium bg-white text-secondary-800 shadow-sm">
+          Sent / Broadcast
+        </div>
       </div>
 
       {/* Stat tiles */}
@@ -271,6 +278,16 @@ export default function AdminNotifications() {
                 {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3 col-span-2 py-1">
+            <input type="checkbox" id="sendEmail" checked={form.sendEmail}
+              onChange={(e) => setForm({ ...form, sendEmail: e.target.checked })}
+              className="w-4 h-4 accent-primary-500" />
+            <label htmlFor="sendEmail" className="text-sm text-secondary-700 cursor-pointer">
+              Also send by <strong>email</strong> to all recipients
+              <span className="text-secondary-400 text-xs ml-1">(requires SMTP configured in backend)</span>
+            </label>
           </div>
 
           <div>

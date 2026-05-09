@@ -21,7 +21,9 @@ import ParentLayout  from '../components/layout/ParentLayout';
 import Login          from '../pages/Login';
 import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword  from '../pages/ResetPassword';
-import NotFound        from '../pages/NotFound';
+import NotFound          from '../pages/NotFound';
+import PaymentVerify     from '../pages/PaymentVerify';
+import Announcements     from '../pages/shared/Announcements';
 import ChangePassword  from '../pages/ChangePassword';
 import Unauthorized from '../pages/Unauthorized';
 
@@ -35,7 +37,11 @@ import AdminResults   from '../pages/admin/Results';
 import AdminPayments  from '../pages/admin/Payments';
 import AdminMessages  from '../pages/admin/Messages';
 import AdminAnalytics from '../pages/admin/Analytics';
-import AdminAuditLogs from '../pages/admin/AuditLogs';
+import AdminAuditLogs   from '../pages/admin/AuditLogs';
+import AdminAdmissions  from '../pages/admin/Admissions';
+import AdminSessions   from '../pages/admin/Sessions';
+import AdminPromote    from '../pages/admin/Promote';
+import AdminTimetable  from '../pages/admin/Timetable';
 
 // Teacher pages
 import TeacherDashboard   from '../pages/teacher/Dashboard';
@@ -107,6 +113,7 @@ export default function AppRoutes() {
       {/* ── Auth ─────────────────────────────────────────────── */}
       <Route path="/login"          element={<LoginRoute />} />
       <Route path="/forgot-password"  element={<ForgotPassword />} />
+      <Route path="/payment/verify"   element={<PaymentVerify />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/unauthorized"            element={<Unauthorized />} />
       <Route path="/forgot-password"          element={<ForgotPassword />} />
@@ -125,6 +132,10 @@ export default function AppRoutes() {
           <Route path="/admin/messages"    element={<AdminMessages />} />
           <Route path="/admin/analytics"   element={<AdminAnalytics />} />
           <Route path="/admin/audit-logs"       element={<AdminAuditLogs />} />
+          <Route path="/admin/admissions"        element={<AdminAdmissions />} />
+          <Route path="/admin/sessions"          element={<AdminSessions />} />
+          <Route path="/admin/promote"          element={<AdminPromote />} />
+          <Route path="/admin/timetable"        element={<AdminTimetable />} />
           <Route path="/admin/change-password"  element={<ChangePassword />} />
         </Route>
       </Route>
@@ -140,6 +151,7 @@ export default function AppRoutes() {
           <Route path="/teacher/planner"       element={<TeacherPlanner />} />
           <Route path="/teacher/messages"      element={<TeacherMessages />} />
           <Route path="/teacher/ai"               element={<TeacherAIGenerator />} />
+          <Route path="/teacher/announcements"    element={<Announcements />} />
           <Route path="/teacher/change-password"   element={<ChangePassword />} />
         </Route>
       </Route>
@@ -154,6 +166,7 @@ export default function AppRoutes() {
           <Route path="/student/messages"     element={<StudentMessages />} />
           <Route path="/student/analytics"        element={<StudentAnalytics />} />
           <Route path="/student/downloads"           element={<StudentDownloads />} />
+          <Route path="/student/announcements"       element={<Announcements />} />
           <Route path="/student/change-password"     element={<ChangePassword />} />
         </Route>
       </Route>
@@ -164,7 +177,8 @@ export default function AppRoutes() {
           <Route path="/parent"           element={<ParentDashboard />} />
           <Route path="/parent/results"   element={<ParentResults />} />
           <Route path="/parent/payments"  element={<ParentPayments />} />
-          <Route path="/parent/messages"        element={<ParentMessages />} />
+          <Route path="/parent/messages"          element={<ParentMessages />} />
+          <Route path="/parent/announcements"     element={<Announcements />} />
           <Route path="/parent/change-password"  element={<ChangePassword />} />
         </Route>
       </Route>

@@ -237,9 +237,15 @@ export default function ParentPayments() {
             <input value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="e.g. First instalment" className="input-field" />
           </div>
 
-          <div className="p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
-            <p className="font-medium mb-0.5">ℹ️ Paystack Secure Payment</p>
-            <p>You'll be redirected to Paystack to complete payment. Your card details are never stored by us.</p>
+          <div className="p-3 bg-blue-50 rounded-xl text-xs text-blue-700 space-y-2">
+            <p className="font-medium">ℹ️ Paystack Secure Payment</p>
+            <p>You will be redirected to Paystack to complete payment safely.</p>
+            <div className="bg-white border border-blue-200 rounded-lg p-2.5 space-y-1">
+              <p className="font-semibold text-blue-800">🧪 Test Card Details (sandbox only):</p>
+              <p>Card No: <span className="font-mono font-bold">4084 0840 8408 4081</span></p>
+              <p>Expiry: <span className="font-mono">any future date</span> &nbsp; CVV: <span className="font-mono">any 3 digits</span></p>
+              <p>PIN: <span className="font-mono">0000</span> &nbsp; OTP: <span className="font-mono">123456</span></p>
+            </div>
           </div>
 
           <div className="flex gap-3">
