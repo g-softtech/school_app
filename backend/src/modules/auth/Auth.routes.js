@@ -4,7 +4,7 @@ const {
   register, login, logout,
   refreshToken, getMe, updatePassword,
   forgotPassword, resetPassword,
-} = require('./Auth.controller');
+} = require('./auth.controller');
 const protect    = require('../../middleware/authMiddleware');
 const restrictTo = require('../../middleware/roleMiddleware');
 const User       = require('../../models/User');
