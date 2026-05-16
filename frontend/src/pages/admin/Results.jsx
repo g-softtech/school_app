@@ -199,53 +199,65 @@ export default function AdminResults() {
     handleSearch();
   };
 
-  // ── Build report card data — fetch student names from students list ──────────
+  // ── Build report card data ────────────────────────────────────────────────────
   const handleReportCards = async () => {
+    if (results.length === 0) { toast.error('No results loaded. Click Search first.'); return; }
+
     const cls = classes.find(c => c._id === classId);
     const className = cls ? `${cls.name} ${cls.section || ''}`.trim() : 'Class';
 
-    // We need student names — fetch them fresh with full populate
-    let studentList = students;
-    if (studentList.length === 0) {
-      try {
-        const res = await getStudents({ classId, limit: 200 });
-        studentList = res.data.data || [];
-      } catch {}
-    }
+    // Always fetch fresh student list — ensures userId.name is populated
+    let studentList = [];
+    try {
+      const res = await getStudents({ classId, limit: 200 });
+      studentList = res.data.data || [];
+    } catch {}
 
-    // Build a map: studentId → { name, admissionNumber }
+    // Build studentMap: _id → { name, admissionNumber }
     const studentMap = {};
     studentList.forEach(s => {
-      studentMap[String(s._id)] = {
+      const id = String(s._id);
+      studentMap[id] = {
         name:  s.userId?.name || s.name || '—',
         admNo: s.admissionNumber || '—',
       };
     });
 
+    // Build subjectMap: _id → name (from our already-loaded subjects state)
+    const subjectMap = {};
+    subjects.forEach(s => { subjectMap[String(s._id)] = s.name; });
+
     // Group results by student
     const grouped = {};
     results.forEach(r => {
-      const sid   = String(r.studentId?._id || r.studentId);
-      const info  = extractStudentInfo(r);
+      // Get studentId — could be ObjectId string or object
+      const sid = String(r.studentId?._id || r.studentId);
 
-      // Prefer data from studentMap (more reliable)
-      const name  = studentMap[sid]?.name  || info.name;
-      const admNo = studentMap[sid]?.admNo || info.admNo;
+      // Get subject name — try populate first, then subjectMap fallback
+      const subjectName =
+        r.subjectId?.name ||
+        subjectMap[String(r.subjectId?._id || r.subjectId)] ||
+        '—';
+
+      // Get student info — prefer studentMap (freshly fetched)
+      const info  = studentMap[sid] || extractStudentInfo(r);
+      const name  = info.name  || '—';
+      const admNo = info.admNo || info.admissionNumber || '—';
 
       if (!grouped[sid]) grouped[sid] = { name, admNo, results: [] };
       grouped[sid].results.push({
-        subjectName: r.subjectId?.name || '—',
-        ca:    r.ca,
-        exam:  r.exam,
-        total: r.total,
-        grade: r.grade,
-        remark: r.remark,
+        subjectName,
+        ca:     r.ca    ?? '—',
+        exam:   r.exam  ?? '—',
+        total:  r.total ?? '—',
+        grade:  r.grade  || '—',
+        remark: r.remark || '—',
       });
     });
 
     const reportStudents = Object.values(grouped);
     if (reportStudents.length === 0) {
-      toast.error('No results to generate report cards for');
+      toast.error('No student data found for report cards');
       return;
     }
 
