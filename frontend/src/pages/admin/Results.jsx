@@ -11,7 +11,7 @@ import { getErrorMessage } from '../../utils/helpers';
 import { generateClassReportCard } from '../../utils/reportCardHelper';
 import { TERMS, SESSIONS } from '../../utils/constants';
 
-const GRADE_CONFIG = {
+const GRADE_CSS = {
   A1:'bg-green-100 text-green-700', B2:'bg-green-100 text-green-700',
   B3:'bg-green-100 text-green-700', C4:'bg-blue-100 text-blue-700',
   C5:'bg-blue-100 text-blue-700',   C6:'bg-blue-100 text-blue-700',
@@ -21,23 +21,32 @@ const GRADE_CONFIG = {
 const PASS_GRADES = ['A1','B2','B3','C4','C5','C6'];
 
 function computeGrade(total) {
-  if (total >= 75) return 'A1';
-  if (total >= 70) return 'B2';
-  if (total >= 65) return 'B3';
-  if (total >= 60) return 'C4';
-  if (total >= 55) return 'C5';
-  if (total >= 50) return 'C6';
-  if (total >= 45) return 'D7';
-  if (total >= 40) return 'E8';
+  if (total >= 75) return 'A1'; if (total >= 70) return 'B2';
+  if (total >= 65) return 'B3'; if (total >= 60) return 'C4';
+  if (total >= 55) return 'C5'; if (total >= 50) return 'C6';
+  if (total >= 45) return 'D7'; if (total >= 40) return 'E8';
   return 'F9';
 }
-
-function computeRemark(grade) {
-  const r = { A1:'Excellent',B2:'Very Good',B3:'Good',C4:'Credit',C5:'Credit',C6:'Credit',D7:'Pass',E8:'Pass',F9:'Fail' };
-  return r[grade] || 'Fail';
+function computeRemark(g) {
+  return { A1:'Excellent',B2:'Very Good',B3:'Good',C4:'Credit',C5:'Credit',
+           C6:'Credit',D7:'Pass',E8:'Pass',F9:'Fail' }[g] || 'Fail';
 }
 
-// One row per subject in the bulk upload grid
+// ── Extract student name/admNo from a result doc regardless of populate depth ──
+function extractStudentInfo(r) {
+  const stu = r.studentId;
+  if (!stu) return { name: '—', admNo: '—', sid: String(r._id) };
+
+  // Deeply populated: { _id, admissionNumber, userId: { name } }
+  const name  = stu.userId?.name
+             || stu.name          // sometimes flattened
+             || '—';
+  const admNo = stu.admissionNumber || '—';
+  const sid   = String(stu._id || stu);
+  return { name, admNo, sid };
+}
+
+// ── SubjectRow — one row per subject in the bulk upload grid ─────────────────
 function SubjectRow({ subject, existingResult, onChange }) {
   const [ca,   setCa]   = useState(existingResult?.ca   ?? '');
   const [exam, setExam] = useState(existingResult?.exam ?? '');
@@ -55,7 +64,7 @@ function SubjectRow({ subject, existingResult, onChange }) {
       remark: grade ? computeRemark(grade) : null,
       hasData, existingId: existingResult?._id,
     });
-  // eslint-disable-next-line
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ca, exam]);
 
   return (
@@ -78,9 +87,9 @@ function SubjectRow({ subject, existingResult, onChange }) {
         {total !== null ? total : <span className="text-secondary-300">—</span>}
       </td>
       <td className="px-3 py-2 text-center">
-        {grade ? (
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${GRADE_CONFIG[grade]}`}>{grade}</span>
-        ) : <span className="text-secondary-300 text-sm">—</span>}
+        {grade
+          ? <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${GRADE_CSS[grade]}`}>{grade}</span>
+          : <span className="text-secondary-300 text-sm">—</span>}
       </td>
       <td className="px-3 py-2 text-center">
         {passing === true  && <FiCheckCircle size={15} className="text-green-500 mx-auto" />}
@@ -90,6 +99,7 @@ function SubjectRow({ subject, existingResult, onChange }) {
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
 export default function AdminResults() {
   const [classes,           setClasses]           = useState([]);
   const [subjects,          setSubjects]          = useState([]);
@@ -144,15 +154,13 @@ export default function AdminResults() {
     if (!stuId) { setExistingResults({}); return; }
     try {
       const res = await getClassResults(classId, { term, session, limit: 100 });
-      const all = res.data.data || [];
       const map = {};
-      all.filter(r => {
-        const sid = r.studentId?._id || r.studentId;
-        return String(sid) === String(stuId);
-      }).forEach(r => {
-        const subId = r.subjectId?._id || r.subjectId;
-        map[subId] = r;
-      });
+      (res.data.data || [])
+        .filter(r => String(r.studentId?._id || r.studentId) === String(stuId))
+        .forEach(r => {
+          const subId = String(r.subjectId?._id || r.subjectId);
+          map[subId] = r;
+        });
       setExistingResults(map);
     } catch { setExistingResults({}); }
   };
@@ -167,8 +175,8 @@ export default function AdminResults() {
     if (toSave.length === 0) { toast.error('Enter scores for at least one subject'); return; }
 
     for (const [, d] of toSave) {
-      if (d.ca !== null && (d.ca < 0 || d.ca > 40))   { toast.error('CA score must be 0–40'); return; }
-      if (d.exam !== null && (d.exam < 0 || d.exam > 60)) { toast.error('Exam score must be 0–60'); return; }
+      if (d.ca   !== null && (d.ca   < 0 || d.ca   > 40)) { toast.error('CA must be 0–40');   return; }
+      if (d.exam !== null && (d.exam < 0 || d.exam > 60)) { toast.error('Exam must be 0–60'); return; }
     }
 
     setSaving(true);
@@ -184,28 +192,81 @@ export default function AdminResults() {
         saved++;
       } catch { failed++; }
     }
-    if (saved > 0)  toast.success(`${saved} result${saved > 1 ? 's' : ''} saved!`);
-    if (failed > 0) toast.error(`${failed} result${failed > 1 ? 's' : ''} failed`);
+    if (saved  > 0) toast.success(`${saved} result${saved > 1 ? 's' : ''} saved!`);
+    if (failed > 0) toast.error(`${failed} failed to save`);
     setSaving(false);
     setShowModal(false);
     handleSearch();
   };
 
-  // Subjects for selected class
+  // ── Build report card data — fetch student names from students list ──────────
+  const handleReportCards = async () => {
+    const cls = classes.find(c => c._id === classId);
+    const className = cls ? `${cls.name} ${cls.section || ''}`.trim() : 'Class';
+
+    // We need student names — fetch them fresh with full populate
+    let studentList = students;
+    if (studentList.length === 0) {
+      try {
+        const res = await getStudents({ classId, limit: 200 });
+        studentList = res.data.data || [];
+      } catch {}
+    }
+
+    // Build a map: studentId → { name, admissionNumber }
+    const studentMap = {};
+    studentList.forEach(s => {
+      studentMap[String(s._id)] = {
+        name:  s.userId?.name || s.name || '—',
+        admNo: s.admissionNumber || '—',
+      };
+    });
+
+    // Group results by student
+    const grouped = {};
+    results.forEach(r => {
+      const sid   = String(r.studentId?._id || r.studentId);
+      const info  = extractStudentInfo(r);
+
+      // Prefer data from studentMap (more reliable)
+      const name  = studentMap[sid]?.name  || info.name;
+      const admNo = studentMap[sid]?.admNo || info.admNo;
+
+      if (!grouped[sid]) grouped[sid] = { name, admNo, results: [] };
+      grouped[sid].results.push({
+        subjectName: r.subjectId?.name || '—',
+        ca:    r.ca,
+        exam:  r.exam,
+        total: r.total,
+        grade: r.grade,
+        remark: r.remark,
+      });
+    });
+
+    const reportStudents = Object.values(grouped);
+    if (reportStudents.length === 0) {
+      toast.error('No results to generate report cards for');
+      return;
+    }
+
+    generateClassReportCard({ className, students: reportStudents, term, session });
+  };
+
+  // Class subjects
   const classSubjects = subjects.filter(s =>
     String(s.classId?._id || s.classId) === String(classId)
   );
 
-  // Group results by student
+  // Group results by student for table display
   const grouped = results.reduce((acc, r) => {
-    const sid = String(r.studentId?._id || r.studentId);
-    if (!acc[sid]) {
-      acc[sid] = {
-        sid, results: [],
-        name:  r.studentId?.userId?.name || '—',
-        admNo: r.studentId?.admissionNumber || '—',
-      };
-    }
+    const { name, admNo, sid } = extractStudentInfo(r);
+
+    // Also check students list for better name
+    const fromList = students.find(s => String(s._id) === sid);
+    const finalName  = fromList?.userId?.name || name;
+    const finalAdmNo = fromList?.admissionNumber || admNo;
+
+    if (!acc[sid]) acc[sid] = { sid, name: finalName, admNo: finalAdmNo, results: [] };
     acc[sid].results.push(r);
     return acc;
   }, {});
@@ -218,14 +279,13 @@ export default function AdminResults() {
     return { ...g, passed, failed: g.results.length - passed, avg };
   }).sort((a, b) => Number(b.avg) - Number(a.avg));
 
-  // Filter by search
   const filteredSummaries = studentSummaries.filter(g =>
     !search ||
     g.name.toLowerCase().includes(search.toLowerCase()) ||
     g.admNo.toLowerCase().includes(search.toLowerCase())
   );
 
-  const filledCount = Object.values(subjectData).filter(d => d.hasData).length;
+  const filledCount    = Object.values(subjectData).filter(d => d.hasData).length;
   const selectedStudent = students.find(s => s._id === selectedStudentId);
 
   return (
@@ -238,23 +298,8 @@ export default function AdminResults() {
         </div>
         <div className="flex gap-2 flex-wrap">
           {results.length > 0 && (
-            <button
-              onClick={() => {
-                const cls = classes.find(c => c._id === classId);
-                generateClassReportCard({
-                  className: cls ? `${cls.name} ${cls.section || ''}`.trim() : 'Class',
-                  students: studentSummaries.map(g => ({
-                    name: g.name, admissionNumber: g.admNo,
-                    results: g.results.map(r => ({
-                      subjectName: r.subjectId?.name,
-                      ca: r.ca, exam: r.exam, total: r.total, grade: r.grade, remark: r.remark,
-                    })),
-                  })),
-                  term, session,
-                });
-              }}
-              className="btn-secondary flex items-center gap-2 text-sm"
-            >
+            <button onClick={handleReportCards}
+              className="btn-secondary flex items-center gap-2 text-sm">
               <FiFileText size={15} /> Report Cards
             </button>
           )}
@@ -269,7 +314,7 @@ export default function AdminResults() {
         <div>
           <label className="input-label">Class *</label>
           <select className="input-field py-1.5 text-sm w-40" value={classId}
-            onChange={e => setClassId(e.target.value)}>
+            onChange={e => { setClassId(e.target.value); setResults([]); }}>
             <option value="">— Select —</option>
             {classes.map(c => <option key={c._id} value={c._id}>{c.name} {c.section}</option>)}
           </select>
@@ -294,7 +339,7 @@ export default function AdminResults() {
         </button>
       </div>
 
-      {/* Results list */}
+      {/* Results table */}
       {loading ? (
         <div className="card space-y-3">
           {[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-secondary-50 rounded-xl animate-pulse" />)}
@@ -316,9 +361,7 @@ export default function AdminResults() {
               <FiFileText size={32} className="mx-auto mb-3 opacity-40" />
               <p className="font-medium">{results.length === 0 ? 'No results yet' : 'No students match your search'}</p>
               <p className="text-xs mt-1">
-                {results.length === 0
-                  ? 'Select class, term and session then click Search'
-                  : 'Try a different search term'}
+                {results.length === 0 ? 'Select class, term and session then click Search' : 'Try a different search term'}
               </p>
             </div>
           ) : (
@@ -358,7 +401,6 @@ export default function AdminResults() {
       {/* Bulk Upload Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Upload Results" size="xl">
         <div className="space-y-5">
-          {/* Student selector */}
           <div>
             <label className="input-label">Select Student *</label>
             <select className="input-field" value={selectedStudentId}
@@ -366,13 +408,12 @@ export default function AdminResults() {
               <option value="">— Choose student —</option>
               {students.map(s => (
                 <option key={s._id} value={s._id}>
-                  {s.userId?.name} ({s.admissionNumber})
+                  {s.userId?.name || s.name} ({s.admissionNumber})
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Term + Session */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="input-label">Term</label>
@@ -388,13 +429,12 @@ export default function AdminResults() {
             </div>
           </div>
 
-          {/* Subject grid */}
           {selectedStudentId && (
             <>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="text-sm font-semibold text-secondary-800">
-                    {selectedStudent?.userId?.name} — {classSubjects.length} subject{classSubjects.length !== 1 ? 's' : ''}
+                    {selectedStudent?.userId?.name || selectedStudent?.name} — {classSubjects.length} subject{classSubjects.length !== 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-secondary-400 mt-0.5">
                     Enter CA (max 40) and Exam (max 60). Leave blank to skip.
@@ -415,7 +455,7 @@ export default function AdminResults() {
               {classSubjects.length === 0 ? (
                 <div className="text-center py-8 bg-secondary-50 rounded-xl text-secondary-400">
                   <p className="text-sm font-medium">No subjects assigned to this class</p>
-                  <p className="text-xs mt-1">Go to Classes & Subjects → expand the class → assign subjects</p>
+                  <p className="text-xs mt-1">Go to Classes &amp; Subjects to assign subjects first</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-secondary-200">
@@ -435,7 +475,7 @@ export default function AdminResults() {
                         <SubjectRow
                           key={subject._id}
                           subject={subject}
-                          existingResult={existingResults[subject._id]}
+                          existingResult={existingResults[subject._id] || existingResults[String(subject._id)]}
                           onChange={handleSubjectChange}
                         />
                       ))}
@@ -444,45 +484,29 @@ export default function AdminResults() {
                 </div>
               )}
 
-              {/* Live summary */}
               {filledCount > 0 && (() => {
-                const filled   = Object.values(subjectData).filter(d => d.hasData);
-                const passCount = filled.filter(d => d.grade && PASS_GRADES.includes(d.grade)).length;
-                const avg = filled.length > 0
+                const filled     = Object.values(subjectData).filter(d => d.hasData);
+                const passCount  = filled.filter(d => d.grade && PASS_GRADES.includes(d.grade)).length;
+                const avg        = filled.length > 0
                   ? (filled.reduce((s, d) => s + (d.total || 0), 0) / filled.length).toFixed(1)
                   : 0;
                 return (
                   <div className="flex gap-6 p-3 bg-primary-50 rounded-xl border border-primary-100">
-                    <div className="text-center">
-                      <p className="text-xs text-primary-600 font-medium">Subjects</p>
-                      <p className="text-xl font-bold text-primary-700">{filledCount}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-secondary-500 font-medium">Average</p>
-                      <p className="text-xl font-bold text-blue-600">{avg}%</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-green-600 font-medium">Passing</p>
-                      <p className="text-xl font-bold text-green-600">{passCount}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-red-500 font-medium">Failing</p>
-                      <p className="text-xl font-bold text-red-500">{filledCount - passCount}</p>
-                    </div>
+                    <div className="text-center"><p className="text-xs text-primary-600 font-medium">Subjects</p><p className="text-xl font-bold text-primary-700">{filledCount}</p></div>
+                    <div className="text-center"><p className="text-xs text-secondary-500 font-medium">Average</p><p className="text-xl font-bold text-blue-600">{avg}%</p></div>
+                    <div className="text-center"><p className="text-xs text-green-600 font-medium">Passing</p><p className="text-xl font-bold text-green-600">{passCount}</p></div>
+                    <div className="text-center"><p className="text-xs text-red-500 font-medium">Failing</p><p className="text-xl font-bold text-red-500">{filledCount - passCount}</p></div>
                   </div>
                 );
               })()}
             </>
           )}
 
-          {/* Actions */}
           <div className="flex gap-3 pt-2 border-t border-secondary-100">
             <button onClick={() => setShowModal(false)} className="btn-secondary flex-1">Cancel</button>
-            <button
-              onClick={handleBulkSave}
+            <button onClick={handleBulkSave}
               disabled={saving || !selectedStudentId || filledCount === 0}
-              className="btn-primary flex-1 justify-center"
-            >
+              className="btn-primary flex-1 justify-center">
               {saving ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
