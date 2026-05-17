@@ -61,7 +61,7 @@ exports.uploadResult = catchAsync(async function(req, res, next) {
     },
     { new: true, upsert: true, runValidators: false }
   )
-    .populate('studentId', 'admissionNumber')
+    .populate({ path: 'studentId', select: 'admissionNumber userId classId', populate: { path: 'userId', select: 'name email' } })
     .populate('subjectId', 'name code')
     .populate('classId',   'name section')
     .populate('uploadedBy','name');
@@ -249,7 +249,7 @@ exports.getClassResults = catchAsync(async function(req, res, next) {
 // ─── Get single result ────────────────────────────────────────────────────────
 exports.getResult = catchAsync(async function(req, res, next) {
   var result = await Result.findById(req.params.id)
-    .populate('studentId', 'admissionNumber')
+    .populate({ path: 'studentId', select: 'admissionNumber userId classId', populate: { path: 'userId', select: 'name email' } })
     .populate('subjectId', 'name code')
     .populate('classId',   'name section')
     .populate('uploadedBy','name');
@@ -277,7 +277,7 @@ exports.updateResult = catchAsync(async function(req, res, next) {
     { new: true }
   )
     .populate('subjectId', 'name code')
-    .populate('studentId', 'admissionNumber');
+    .populate({ path: 'studentId', select: 'admissionNumber userId classId', populate: { path: 'userId', select: 'name email' } });
 
   res.status(200).json({ success: true, message: 'Result updated successfully', data: updated });
 });
