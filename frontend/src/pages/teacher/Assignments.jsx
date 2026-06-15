@@ -151,43 +151,37 @@ export default function TeacherAssignments() {
         </select>
       </div>
 
-      <div className="card overflow-hidden p-0">
-        {loading ? (
-          <div className="p-6 space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-secondary-50 rounded-xl animate-pulse" />)}</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-14 text-secondary-400"><FiClipboard size={32} className="mx-auto mb-3 opacity-40" /><p>No assignments found</p></div>
-        ) : (
-          <Table 
-            columns={[
-              { key: 'title', label: 'Title', render: (val) => <span className="font-medium text-secondary-800 max-w-48 truncate block">{val}</span> },
-              { key: 'subjectId', label: 'Subject', render: (val) => val?.name || '—' },
-              { key: 'classId', label: 'Class', render: (val) => val?.name || '—' },
-              { key: 'dueDate', label: 'Due Date', render: (val) => {
-                  const overdue = new Date() > new Date(val);
-                  return <span className={overdue ? 'text-red-500 font-medium' : ''}>{formatDate(val)}</span>;
-                }
-              },
-              { key: 'maxScore', label: 'Max Score', render: (val) => <span className="text-center block">{val}</span> },
-              { key: 'term', label: 'Term', render: (val) => <span className="capitalize">{val}</span> },
-              { key: 'actions', label: '', render: (_, a) => (
-                  <div className="flex items-center gap-1 justify-end">
-                    <button onClick={() => openSubmissions(a)} className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View submissions">
-                      <FiEye size={14} className="text-blue-500" />
-                    </button>
-                    <button onClick={() => openEdit(a)} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
-                      <FiEdit2 size={14} className="text-secondary-500" />
-                    </button>
-                    <button onClick={() => handleDelete(a._id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
-                      <FiTrash2 size={14} className="text-red-400" />
-                    </button>
-                  </div>
-                )
-              }
-            ]} 
-            data={filtered} 
-          />
-        )}
-      </div>
+      <Table
+        loading={loading}
+        emptyMessage="No assignments found"
+        columns={[
+          { key: 'title', label: 'Title', render: (val) => <span className="font-medium text-secondary-800 max-w-48 truncate block">{val}</span> },
+          { key: 'subjectId', label: 'Subject', render: (val) => val?.name || '—' },
+          { key: 'classId', label: 'Class', render: (val) => val?.name || '—' },
+          { key: 'dueDate', label: 'Due Date', render: (val) => {
+              const overdue = new Date() > new Date(val);
+              return <span className={overdue ? 'text-red-500 font-medium' : ''}>{formatDate(val)}</span>;
+            }
+          },
+          { key: 'maxScore', label: 'Max Score', render: (val) => <span className="text-center block">{val}</span> },
+          { key: 'term', label: 'Term', render: (val) => <span className="capitalize">{val}</span> },
+          { key: 'actions', label: '', render: (_, a) => (
+              <div className="flex items-center gap-1 justify-end">
+                <button onClick={() => openSubmissions(a)} className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View submissions">
+                  <FiEye size={14} className="text-blue-500" />
+                </button>
+                <button onClick={() => openEdit(a)} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
+                  <FiEdit2 size={14} className="text-secondary-500" />
+                </button>
+                <button onClick={() => handleDelete(a._id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                  <FiTrash2 size={14} className="text-red-400" />
+                </button>
+              </div>
+            )
+          }
+        ]} 
+        data={filtered} 
+      />
 
       {pagination.pages > 1 && (
         <div className="flex justify-center gap-2">

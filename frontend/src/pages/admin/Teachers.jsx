@@ -129,65 +129,51 @@ export default function AdminTeachers() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden p-0">
-        {loading ? (
-          <div className="p-6 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-14 bg-secondary-50 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-secondary-400">
-            <FiUserCheck size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="font-medium">No teachers found</p>
-            <p className="text-xs mt-1">Click "Add Teacher" to create one</p>
-          </div>
-        ) : (
-          <Table
-            columns={[
-              { key: 'name', label: 'Name', render: (val, t) => (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-700 text-xs font-bold flex-shrink-0">
-                      {t.name?.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
-                    </div>
-                    <span className="font-medium text-secondary-800">{t.name}</span>
-                  </div>
-                )
-              },
-              { key: 'email', label: 'Email', render: (val) => <span className="text-secondary-500 text-xs">{val}</span> },
-              { key: 'phone', label: 'Phone', render: (val) => <span className="text-secondary-500 text-xs">{val || '—'}</span> },
-              { key: 'qualification', label: 'Qualification', render: (val) => <span className="text-secondary-500 text-xs">{val || '—'}</span> },
-              { key: 'isActive', label: 'Status', render: (val) => (
-                  <Badge variant={val !== false ? 'success' : 'danger'}>
-                    {val !== false ? 'Active' : 'Inactive'}
-                  </Badge>
-                )
-              },
-              { key: 'actions', label: '', render: (_, t) => (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => handleToggleActive(t)}
-                      className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors"
-                      title={t.isActive !== false ? 'Deactivate' : 'Activate'}>
-                      {t.isActive !== false
-                        ? <FiEyeOff size={14} className="text-secondary-500" />
-                        : <FiEye size={14} className="text-green-500" />}
-                    </button>
-                    <button onClick={() => openEdit(t)}
-                      className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
-                      <FiEdit2 size={14} className="text-secondary-500" />
-                    </button>
-                    <button onClick={() => { setDeleting(t); setShowConfirm(true); }}
-                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
-                      <FiTrash2 size={14} className="text-red-400" />
-                    </button>
-                  </div>
-                )
-              }
-            ]}
-            data={filtered}
-          />
-        )}
-      </div>
+      <Table
+        loading={loading}
+        emptyMessage="No teachers found"
+        columns={[
+          { key: 'name', label: 'Name', render: (val, t) => (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-700 text-xs font-bold flex-shrink-0">
+                  {t.name?.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                </div>
+                <span className="font-medium text-secondary-800">{t.name}</span>
+              </div>
+            )
+          },
+          { key: 'email', label: 'Email', render: (val) => <span className="text-secondary-500 text-xs">{val}</span> },
+          { key: 'phone', label: 'Phone', render: (val) => <span className="text-secondary-500 text-xs">{val || '—'}</span> },
+          { key: 'qualification', label: 'Qualification', render: (val) => <span className="text-secondary-500 text-xs">{val || '—'}</span> },
+          { key: 'isActive', label: 'Status', render: (val) => (
+              <Badge variant={val !== false ? 'success' : 'danger'}>
+                {val !== false ? 'Active' : 'Inactive'}
+              </Badge>
+            )
+          },
+          { key: 'actions', label: '', render: (_, t) => (
+              <div className="flex items-center gap-1">
+                <button onClick={() => handleToggleActive(t)}
+                  className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors"
+                  title={t.isActive !== false ? 'Deactivate' : 'Activate'}>
+                  {t.isActive !== false
+                    ? <FiEyeOff size={14} className="text-secondary-500" />
+                    : <FiEye size={14} className="text-green-500" />}
+                </button>
+                <button onClick={() => openEdit(t)}
+                  className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
+                  <FiEdit2 size={14} className="text-secondary-500" />
+                </button>
+                <button onClick={() => { setDeleting(t); setShowConfirm(true); }}
+                  className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                  <FiTrash2 size={14} className="text-red-400" />
+                </button>
+              </div>
+            )
+          }
+        ]}
+        data={filtered}
+      />
 
       {/* Pagination */}
       {pagination.pages > 1 && (

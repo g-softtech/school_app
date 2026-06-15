@@ -211,13 +211,13 @@ export default function TeacherResults() {
       {!classFilter ? (
         <div className="card text-center py-16 text-secondary-400"><FiAward size={32} className="mx-auto mb-3 opacity-40" /><p>Select a class to view results</p></div>
       ) : (
-        <div className="card overflow-hidden p-0">
+        <div className="card overflow-hidden p-0 max-w-[100vw]">
           {loading ? (
             <div className="p-6 space-y-3">{[...Array(6)].map((_, i) => <div key={i} className="h-12 bg-secondary-50 rounded-xl animate-pulse" />)}</div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-14 text-secondary-400"><FiAward size={32} className="mx-auto mb-3 opacity-40" /><p>No results found</p></div>
           ) : (
-            <div className="overflow-x-auto w-full max-w-full"><table className="w-full text-sm">
+            <div className="overflow-x-auto w-full"><table className="w-full text-sm min-w-[600px]">
               <thead><tr className="bg-secondary-50">
                 {['Student', 'Subject', 'CA (40)', 'Exam (60)', 'Total', 'Grade', 'Remark', ''].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-secondary-500 uppercase tracking-wide">{h}</th>

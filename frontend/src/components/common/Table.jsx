@@ -51,8 +51,9 @@ export default function Table({ columns, data, loading, emptyMessage = 'No data 
           <div className="card p-0">{emptyState}</div>
         ) : (
           data.map((row, i) => {
-            const dataCols = columns.filter(c => c.key !== 'actions' && c.label !== '');
-            const actionCols = columns.filter(c => c.key === 'actions' || c.label === '');
+            const isAction = (c) => c.key === 'actions' || c.key === 'action' || c.label === '' || c.label?.toLowerCase() === 'actions' || c.label?.toLowerCase() === 'action';
+            const dataCols = columns.filter(c => !isAction(c));
+            const actionCols = columns.filter(c => isAction(c));
             
             return (
               <div key={i} className="card p-4 space-y-3">
@@ -60,7 +61,7 @@ export default function Table({ columns, data, loading, emptyMessage = 'No data 
                   {dataCols.map((c) => (
                     <div key={c.key} className="flex justify-between items-start gap-4 text-sm">
                       <span className="text-secondary-500 font-medium whitespace-nowrap">{c.label}</span>
-                      <span className="text-secondary-800 text-right break-words min-w-0 flex-1">
+                      <span className="text-secondary-800 text-right break-words min-w-0 flex-1 overflow-hidden">
                         {c.render ? c.render(row[c.key], row) : row[c.key] ?? '—'}
                       </span>
                     </div>
@@ -76,7 +77,7 @@ export default function Table({ columns, data, loading, emptyMessage = 'No data 
                 {actionCols.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-secondary-100 flex flex-wrap items-center justify-end gap-2 min-w-0 action-footer">
                     {actionCols.map(c => (
-                      <div key={c.key} className="flex-1 min-w-0 flex justify-end">
+                      <div key={c.key} className="min-w-0 flex flex-wrap justify-end gap-2">
                         {c.render ? c.render(row[c.key], row) : row[c.key]}
                       </div>
                     ))}

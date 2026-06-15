@@ -109,7 +109,7 @@ export default function StudentResults() {
       )}
 
       {/* Result table */}
-      <div className="card overflow-hidden p-0" ref={printRef}>
+      <div className="card overflow-hidden p-0 max-w-[100vw]" ref={printRef}>
         <div className="p-5 border-b border-secondary-100">
           {student && (
             <div>
@@ -134,7 +134,7 @@ export default function StudentResults() {
         ) : results.length === 0 ? (
           <p className="text-center text-secondary-400 py-12 text-sm">No results found for this term and session</p>
         ) : (
-          <div className="overflow-x-auto w-full max-w-full"><table className="w-full text-sm">
+          <div className="overflow-x-auto w-full"><table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="bg-secondary-50">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-secondary-500 uppercase tracking-wide">#</th>

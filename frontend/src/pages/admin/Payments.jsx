@@ -295,59 +295,69 @@ export default function AdminPayments() {
       </div>
 
       {/* Payments Table */}
-      {loading ? <PageSkeleton type="table" rows={10} /> : (
-        <div className="card overflow-hidden p-0">
-          {filtered.length === 0 ? (
-            <div className="text-center py-14 text-secondary-400">
-              <FiCreditCard size={32} className="mx-auto mb-3 opacity-40" />
-              <p className="font-medium">No payments found</p>
-            </div>
-          ) : (
-            <Table
-              columns={[
-                { key: 'student', label: 'Student', render: (_, p) => (
-                    <>
-                      <p className="font-medium text-secondary-800">{p.studentId?.userId?.name || '—'}</p>
-                      <p className="text-xs text-secondary-400">{p.studentId?.admissionNumber}</p>
-                    </>
-                  )
-                },
-                { key: 'class', label: 'Class', render: (_, p) => <span className="text-xs text-secondary-500">{p.studentId?.classId?.name} {p.studentId?.classId?.section}</span> },
-                { key: 'amount', label: 'Amount', render: (val) => <span className="font-bold text-primary-700">{formatCurrency(val)}</span> },
-                { key: 'feeType', label: 'Fee Type', render: (val) => <span className="capitalize text-xs text-secondary-600">{val}</span> },
-                { key: 'method', label: 'Method', render: (_, p) => (
-                    <div className="text-xs text-secondary-600">
-                      {METHOD_LABELS[p.paymentMethod] || p.paymentMethod}
-                      {p.bankName && <p className="text-secondary-400">{p.bankName}</p>}
-                    </div>
-                  )
-                },
-                { key: 'term', label: 'Term', render: (val) => <span className="capitalize text-xs text-secondary-600">{val}</span> },
-                { key: 'date', label: 'Date', render: (_, p) => <span className="text-xs text-secondary-400">{p.paidAt ? formatDateTime(p.paidAt) : formatDateTime(p.createdAt)}</span> },
-                { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
-                { key: 'actions', label: '', render: (_, p) => (
-                    <div className="flex items-center gap-1 justify-end">
-                      {p.status === 'awaiting_approval' && (
-                        <button onClick={() => { setActivePayment(p); setShowApprove(true); }}
-                          className="text-xs bg-green-500 text-white px-2 py-1 rounded-lg hover:bg-green-600 transition-colors font-medium">
-                          Review
-                        </button>
-                      )}
-                      {p.status === 'paid' && (
-                        <button onClick={() => openReceipt(p)}
-                          className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View receipt">
-                          <FiEye size={14} className="text-blue-500" />
-                        </button>
-                      )}
-                    </div>
-                  )
-                }
-              ]}
-              data={filtered}
-            />
-          )}
-        </div>
-      )}
+      <Table
+        loading={loading}
+        emptyMessage="No payments found"
+        columns={[
+          { key: 'student', label: 'Student', render: (_, p) => (
+              <>
+                <p className="font-medium text-secondary-800">{p.studentId?.userId?.name || '—'}</p>
+                <p className="text-xs text-secondary-400">{p.studentId?.admissionNumber}</p>
+              </>
+            )
+          },
+          { key: 'class', label: 'Class', render: (_, p) => <span className="text-xs text-secondary-500">{p.studentId?.classId?.name} {p.studentId?.classId?.section}</span> },
+          { key: 'amount', label: 'Amount', render: (val) => <span className="font-bold text-primary-700">{formatCurrency(val)}</span> },
+          { key: 'feeType', label: 'Fee Type', render: (val) => <span className="capitalize text-xs text-secondary-600">{val}</span> },
+          { key: 'method', label: 'Method', render: (_, p) => (
+              <div className="text-xs text-secondary-600">
+                {METHOD_LABELS[p.paymentMethod] || p.paymentMethod}
+                {p.paymentMethod === 'bank_transfer' && p.bankName && <p className="text-[10px] text-secondary-400">{p.bankName}</p>}
+                {p.reference && <p className="text-[10px] text-secondary-400 font-mono">Ref: {p.reference}</p>}
+              </div>
+            )
+          },
+          { key: 'date', label: 'Date', render: (_, p) => (
+              <span className="text-xs text-secondary-600">
+                {formatDate(p.paymentDate || p.createdAt)}
+              </span>
+            )
+          },
+          { key: 'status', label: 'Status', render: (val) => {
+              const c = STATUS_CONFIG[val] || STATUS_CONFIG.pending;
+              return (
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 w-fit ${c.color}`}>
+                  <c.icon size={10} /> {c.label}
+                </span>
+              );
+            }
+          },
+          { key: 'actions', label: '', render: (_, p) => (
+              <div className="flex items-center gap-1 justify-end">
+                {p.status === 'completed' && (
+                  <button onClick={() => { setReceipt(p); setTimeout(printReceipt, 100); }} title="Print Receipt" className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500">
+                    <FiPrinter size={14} />
+                  </button>
+                )}
+                {p.status === 'awaiting_approval' && (
+                  <button onClick={() => { setApproving(p); setShowApproveModal(true); }} title="Review & Approve" className="p-1.5 hover:bg-amber-100 rounded-lg text-amber-600">
+                    <FiCheckCircle size={14} />
+                  </button>
+                )}
+                {p.status !== 'completed' && (
+                  <button onClick={() => openEdit(p)} title="Edit Status" className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500">
+                    <FiEdit2 size={14} />
+                  </button>
+                )}
+                <button onClick={() => { setDeleting(p); setShowConfirm(true); }} title="Delete" className="p-1.5 hover:bg-red-50 rounded-lg text-red-400">
+                  <FiTrash2 size={14} />
+                </button>
+              </div>
+            )
+          }
+        ]}
+        data={filtered}
+      />
 
       {/* Pagination */}
       {pagination.pages > 1 && (

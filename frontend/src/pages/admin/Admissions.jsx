@@ -164,47 +164,39 @@ export default function AdminAdmissions() {
 
           {/* Table */}
           {loading ? <PageSkeleton type="table" rows={8} /> : (
-            <div className="card overflow-hidden p-0">
-              {filtered.length === 0 ? (
-                <div className="text-center py-14 text-secondary-400">
-                  <FiUser size={32} className="mx-auto mb-3 opacity-40" />
-                  <p className="font-medium">No applications found</p>
-                </div>
-              ) : (
-                <Table
-                  columns={[
-                    { key: 'fullName', label: 'Student', render: (val) => <span className="font-medium text-secondary-800">{val}</span> },
-                    { key: 'applyingFor', label: 'Class', render: (val) => <span className="text-secondary-600">{val}</span> },
-                    { key: 'parentName', label: 'Parent', render: (val) => <span className="text-secondary-600">{val}</span> },
-                    { key: 'contact', label: 'Contact', render: (_, app) => (
-                        <>
-                          <p className="text-xs text-secondary-600">{app.email}</p>
-                          <p className="text-xs text-secondary-400">{app.phone}</p>
-                        </>
-                      )
-                    },
-                    { key: 'createdAt', label: 'Applied', render: (val) => <span className="text-xs text-secondary-400">{formatDate(val)}</span> },
-                    { key: 'status', label: 'Status', render: (val) => {
-                        const sc = STATUS_CONFIG[val] || STATUS_CONFIG.pending;
-                        return (
-                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 w-fit ${sc.color}`}>
-                            <sc.icon size={11} /> {sc.label}
-                          </span>
-                        );
-                      }
-                    },
-                    { key: 'actions', label: '', render: (_, app) => (
-                        <button onClick={() => openApplication(app)}
-                          className="text-xs text-primary-600 hover:underline font-medium">
-                          Review
-                        </button>
-                      )
-                    }
-                  ]}
-                  data={filtered}
-                />
-              )}
-            </div>
+            <Table
+              columns={[
+                { key: 'fullName', label: 'Student', render: (val) => <span className="font-medium text-secondary-800">{val}</span> },
+                { key: 'applyingFor', label: 'Class', render: (val) => <span className="text-secondary-600">{val}</span> },
+                { key: 'parentName', label: 'Parent', render: (val) => <span className="text-secondary-600">{val}</span> },
+                { key: 'contact', label: 'Contact', render: (_, app) => (
+                    <>
+                      <p className="text-xs text-secondary-600">{app.email}</p>
+                      <p className="text-xs text-secondary-400">{app.phone}</p>
+                    </>
+                  )
+                },
+                { key: 'createdAt', label: 'Applied', render: (val) => <span className="text-xs text-secondary-400">{formatDate(val)}</span> },
+                { key: 'status', label: 'Status', render: (val) => {
+                    const sc = STATUS_CONFIG[val] || STATUS_CONFIG.pending;
+                    return (
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 w-fit ${sc.color}`}>
+                        <sc.icon size={11} /> {sc.label}
+                      </span>
+                    );
+                  }
+                },
+                { key: 'actions', label: '', render: (_, app) => (
+                    <button onClick={() => openApplication(app)}
+                      className="text-xs text-primary-600 hover:underline font-medium">
+                      Review
+                    </button>
+                  )
+                }
+              ]}
+              data={filtered}
+              emptyMessage="No applications found"
+            />
           )}
 
           {/* Pagination */}

@@ -292,8 +292,9 @@ export default function AdminTimetable() {
           )}
 
           {/* Timetable grid */}
-          <div className="card overflow-x-auto p-0">
-            <div className="overflow-x-auto w-full max-w-full"><table className="w-full text-xs min-w-full max-w-full">
+          <div className="card overflow-hidden p-0 max-w-[100vw]">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-xs min-w-[600px]">
               <thead>
                 <tr className="bg-secondary-800 text-white">
                   <th className="px-3 py-3 text-left font-semibold w-28">Period</th>

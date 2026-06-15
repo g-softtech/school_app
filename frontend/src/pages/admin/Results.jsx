@@ -373,13 +373,13 @@ export default function AdminResults() {
               </p>
             </div>
           ) : (
-            <div className="card overflow-hidden p-0">
+            <div className="card overflow-hidden p-0 max-w-[100vw]">
               <div className="px-5 py-3 bg-secondary-50 border-b border-secondary-100">
                 <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wide">
                   {filteredSummaries.length} student{filteredSummaries.length !== 1 ? 's' : ''} — {term} term · {session}
                 </p>
               </div>
-              <div className="overflow-x-auto w-full max-w-full"><table className="w-full text-sm">
+              <div className="overflow-x-auto w-full"><table className="w-full text-sm min-w-[600px]">
                 <thead>
                   <tr className="bg-secondary-50 border-b border-secondary-100">
                     {['#','Student','Adm. No','Subjects','Average','Passed','Failed'].map(h => (
@@ -467,7 +467,7 @@ export default function AdminResults() {
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-secondary-200">
-                  <div className="overflow-x-auto w-full max-w-full"><table className="w-full text-sm">
+                  <div className="overflow-x-auto w-full"><table className="w-full text-sm min-w-[600px]">
                     <thead>
                       <tr className="bg-secondary-800 text-white">
                         <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase">Subject</th>

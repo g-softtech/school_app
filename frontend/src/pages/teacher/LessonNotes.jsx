@@ -175,50 +175,38 @@ export default function TeacherLessonNotes() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden p-0">
-        {loading ? (
-          <div className="p-6 space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-secondary-50 rounded-xl animate-pulse" />)}</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-14 text-secondary-400">
-            <FiFileText size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="font-medium">No lesson notes found</p>
-            <p className="text-xs mt-1">Click "New Note" to create your first lesson note</p>
-          </div>
-        ) : (
-          <div className="card overflow-hidden p-0">
-            <Table
-              columns={[
-                { key: 'topic', label: 'Topic', render: (val) => <span className="font-medium text-secondary-800 max-w-44 truncate">{val}</span> },
-                { key: 'subjectId', label: 'Subject', render: (val) => <span className="text-secondary-600">{val?.name || '—'}</span> },
-                { key: 'classId', label: 'Class', render: (val) => <span className="text-secondary-600">{val?.name || '—'}</span> },
-                { key: 'week', label: 'Week', render: (val) => <span className="text-secondary-600">{val}</span> },
-                { key: 'term', label: 'Term', render: (val) => <span className="capitalize text-secondary-600">{val}</span> },
-                { key: 'fileUrl', label: 'File', render: (val) => val ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">📎 Yes</span> : <span className="text-xs text-secondary-300">—</span> },
-                { key: 'isPublished', label: 'Status', render: (val) => <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${val ? 'bg-green-100 text-green-700' : 'bg-secondary-100 text-secondary-500'}`}>{val ? 'Published' : 'Draft'}</span> },
-                { key: 'createdAt', label: 'Date', render: (val) => <span className="text-secondary-500 text-xs">{formatDate(val)}</span> },
-                { key: 'actions', label: '', render: (_, n) => (
-                    <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => openView(n)} className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View">
-                        <FiFileText size={14} className="text-blue-500" />
-                      </button>
-                      <button onClick={() => togglePublish(n)} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors" title={n.isPublished ? 'Unpublish' : 'Publish'}>
-                        {n.isPublished ? <FiEyeOff size={14} className="text-secondary-500" /> : <FiEye size={14} className="text-green-600" />}
-                      </button>
-                      <button onClick={() => openEdit(n)} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
-                        <FiEdit2 size={14} className="text-secondary-500" />
-                      </button>
-                      <button onClick={() => handleDelete(n._id)} disabled={deleting === n._id} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
-                        <FiTrash2 size={14} className="text-red-400" />
-                      </button>
-                    </div>
-                  )
-                }
-              ]}
-              data={filtered}
-            />
-          </div>
-        )}
-      </div>
+      <Table
+        loading={loading}
+        emptyMessage="No lesson notes found. Click 'New Note' to create your first lesson note."
+        columns={[
+          { key: 'topic', label: 'Topic', render: (val) => <span className="font-medium text-secondary-800 max-w-44 truncate">{val}</span> },
+          { key: 'subjectId', label: 'Subject', render: (val) => <span className="text-secondary-600">{val?.name || '—'}</span> },
+          { key: 'classId', label: 'Class', render: (val) => <span className="text-secondary-600">{val?.name || '—'}</span> },
+          { key: 'week', label: 'Week', render: (val) => <span className="text-secondary-600">{val}</span> },
+          { key: 'term', label: 'Term', render: (val) => <span className="capitalize text-secondary-600">{val}</span> },
+          { key: 'fileUrl', label: 'File', render: (val) => val ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">📎 Yes</span> : <span className="text-xs text-secondary-300">—</span> },
+          { key: 'isPublished', label: 'Status', render: (val) => <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${val ? 'bg-green-100 text-green-700' : 'bg-secondary-100 text-secondary-500'}`}>{val ? 'Published' : 'Draft'}</span> },
+          { key: 'createdAt', label: 'Date', render: (val) => <span className="text-secondary-500 text-xs">{formatDate(val)}</span> },
+          { key: 'actions', label: '', render: (_, n) => (
+              <div className="flex items-center gap-1 justify-end">
+                <button onClick={() => openView(n)} className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View">
+                  <FiFileText size={14} className="text-blue-500" />
+                </button>
+                <button onClick={() => togglePublish(n)} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors" title={n.isPublished ? 'Unpublish' : 'Publish'}>
+                  {n.isPublished ? <FiEyeOff size={14} className="text-secondary-500" /> : <FiEye size={14} className="text-green-600" />}
+                </button>
+                <button onClick={() => openEdit(n)} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
+                  <FiEdit2 size={14} className="text-secondary-500" />
+                </button>
+                <button onClick={() => handleDelete(n._id)} disabled={deleting === n._id} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                  <FiTrash2 size={14} className="text-red-400" />
+                </button>
+              </div>
+            )
+          }
+        ]}
+        data={filtered}
+      />
 
       {/* Pagination */}
       {pagination.pages > 1 && (

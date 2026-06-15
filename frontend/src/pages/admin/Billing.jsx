@@ -220,74 +220,55 @@ export default function AdminBilling() {
 
       {/* Bills Table */}
       {tab === 'bills' && (
-        loading ? <PageSkeleton type="table" rows={8} /> : (
-          <div className="card overflow-hidden p-0">
-            {filtered.length === 0 ? (
-              <div className="text-center py-14 text-secondary-400">
-                <FiFileText size={32} className="mx-auto mb-3 opacity-40" />
-                <p className="font-medium">No bills found</p>
-                <p className="text-xs mt-1">Click "Generate Bills" to create bills for a class</p>
-              </div>
-            ) : (
-              <Table
-                columns={[
-                  { key: 'studentId', label: 'Student', render: (val) => <span className="font-medium text-secondary-800">{val?.userId?.name || '—'}</span> },
-                  { key: 'admNo', label: 'Adm No', render: (_, b) => <span className="text-xs text-secondary-500">{b.studentId?.admissionNumber || '—'}</span> },
-                  { key: 'classId', label: 'Class', render: (val) => <span className="text-secondary-600 text-xs">{val?.name} {val?.section}</span> },
-                  { key: 'totalAmount', label: 'Total', render: (val) => <span className="font-semibold text-secondary-800">{formatCurrency(val)}</span> },
-                  { key: 'totalPaid', label: 'Paid', render: (val) => <span className="font-semibold text-green-600">{formatCurrency(val)}</span> },
-                  { key: 'totalBalance', label: 'Balance', render: (val) => <span className="font-bold text-red-500">{formatCurrency(val)}</span> },
-                  { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
-                  { key: 'actions', label: '', render: (_, bill) => (
-                      <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => { setViewBill(bill); setShowDetail(true); }}
-                          className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View details">
-                          <FiEye size={14} className="text-blue-500" />
-                        </button>
-                        <button onClick={() => handleSync(bill._id)}
-                          className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors" title="Sync payments">
-                          <FiRefreshCw size={14} className="text-secondary-500" />
-                        </button>
-                        <button onClick={() => { setDeleting(bill); setShowConfirm(true); }}
-                          className="p-1.5 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                          <FiTrash2 size={14} className="text-red-400" />
-                        </button>
-                      </div>
-                    )
-                  }
-                ]}
-                data={filtered}
-              />
-            )}
-          </div>
-        )
+        <Table
+          loading={loading}
+          emptyMessage="No bills found. Click 'Generate Bills' to create bills for a class."
+          columns={[
+            { key: 'studentId', label: 'Student', render: (val) => <span className="font-medium text-secondary-800">{val?.userId?.name || '—'}</span> },
+            { key: 'admNo', label: 'Adm No', render: (_, b) => <span className="text-xs text-secondary-500">{b.studentId?.admissionNumber || '—'}</span> },
+            { key: 'classId', label: 'Class', render: (val) => <span className="text-secondary-600 text-xs">{val?.name} {val?.section}</span> },
+            { key: 'totalAmount', label: 'Total', render: (val) => <span className="font-semibold text-secondary-800">{formatCurrency(val)}</span> },
+            { key: 'totalPaid', label: 'Paid', render: (val) => <span className="font-semibold text-green-600">{formatCurrency(val)}</span> },
+            { key: 'totalBalance', label: 'Balance', render: (val) => <span className="font-bold text-red-500">{formatCurrency(val)}</span> },
+            { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
+            { key: 'actions', label: '', render: (_, bill) => (
+                <div className="flex items-center gap-1 justify-end">
+                  <button onClick={() => { setViewBill(bill); setShowDetail(true); }}
+                    className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View details">
+                    <FiEye size={14} className="text-blue-500" />
+                  </button>
+                  <button onClick={() => handleSync(bill._id)}
+                    className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors" title="Sync payments">
+                    <FiRefreshCw size={14} className="text-secondary-500" />
+                  </button>
+                  <button onClick={() => { setDeleting(bill); setShowConfirm(true); }}
+                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                    <FiTrash2 size={14} className="text-red-400" />
+                  </button>
+                </div>
+              )
+            }
+          ]}
+          data={filtered}
+        />
       )}
 
       {/* Defaulters Table */}
       {tab === 'defaulters' && (
-        <div className="card overflow-hidden p-0">
-          {defaulters.length === 0 ? (
-            <div className="text-center py-14 text-secondary-400">
-              <FiCheckCircle size={32} className="mx-auto mb-3 opacity-40 text-green-400" />
-              <p className="font-medium">No defaulters found</p>
-              <p className="text-xs mt-1">All students are up to date with payments</p>
-            </div>
-          ) : (
-            <Table
-              columns={[
-                { key: 'index', label: '#', render: (_, b, i) => <span className="text-secondary-400 text-xs">{i + 1}</span> },
-                { key: 'studentId', label: 'Student', render: (val) => <span className="font-medium text-secondary-800">{val?.userId?.name || '—'}</span> },
-                { key: 'admNo', label: 'Adm No', render: (_, b) => <span className="text-xs text-secondary-500">{b.studentId?.admissionNumber || '—'}</span> },
-                { key: 'classId', label: 'Class', render: (val) => <span className="text-secondary-600 text-xs">{val?.name} {val?.section}</span> },
-                { key: 'totalAmount', label: 'Total', render: (val) => <span className="font-semibold text-secondary-800">{formatCurrency(val)}</span> },
-                { key: 'totalPaid', label: 'Paid', render: (val) => <span className="font-semibold text-green-600">{formatCurrency(val)}</span> },
-                { key: 'totalBalance', label: 'Outstanding', render: (val) => <span className="font-bold text-red-500">{formatCurrency(val)}</span> },
-                { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> }
-              ]}
-              data={defaulters}
-            />
-          )}
-        </div>
+        <Table
+          emptyMessage="No defaulters found. All students are up to date with payments."
+          columns={[
+            { key: 'index', label: '#', render: (_, b, i) => <span className="text-secondary-400 text-xs">{i + 1}</span> },
+            { key: 'studentId', label: 'Student', render: (val) => <span className="font-medium text-secondary-800">{val?.userId?.name || '—'}</span> },
+            { key: 'admNo', label: 'Adm No', render: (_, b) => <span className="text-xs text-secondary-500">{b.studentId?.admissionNumber || '—'}</span> },
+            { key: 'classId', label: 'Class', render: (val) => <span className="text-secondary-600 text-xs">{val?.name} {val?.section}</span> },
+            { key: 'totalAmount', label: 'Total', render: (val) => <span className="font-semibold text-secondary-800">{formatCurrency(val)}</span> },
+            { key: 'totalPaid', label: 'Paid', render: (val) => <span className="font-semibold text-green-600">{formatCurrency(val)}</span> },
+            { key: 'totalBalance', label: 'Outstanding', render: (val) => <span className="font-bold text-red-500">{formatCurrency(val)}</span> },
+            { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> }
+          ]}
+          data={defaulters}
+        />
       )}
 
       {/* Pagination */}

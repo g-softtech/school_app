@@ -183,57 +183,48 @@ export default function AdminFeeStructures() {
       </div>
 
       {/* Table */}
-      {loading ? <PageSkeleton type="table" rows={8} /> : (
-        <div className="card overflow-hidden p-0">
-          {filtered.length === 0 ? (
-            <div className="text-center py-16 text-secondary-400">
-              <FiDollarSign size={36} className="mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No fee structures found</p>
-              <p className="text-xs mt-1">Click "New Fee" to create one</p>
-            </div>
-          ) : (
-            <Table
-              columns={[
-                { key: 'name', label: 'Fee Name', render: (_, fee) => (
-                    <>
-                      <p className="font-medium text-secondary-800">{fee.name}</p>
-                      {fee.description && <p className="text-xs text-secondary-400 truncate max-w-48">{fee.description}</p>}
-                    </>
-                  )
-                },
-                { key: 'feeType', label: 'Type', render: (val) => <FeeTypeBadge type={val} /> },
-                { key: 'amount', label: 'Amount', render: (val) => <span className="font-bold text-primary-700">{formatCurrency(val)}</span> },
-                { key: 'scope', label: 'Scope', render: (_, fee) => (
-                    <span className="text-secondary-600 text-xs">
-                      {fee.scope === 'all_classes'      ? 'All Classes' : null}
-                      {fee.scope === 'specific_class'   ? `${fee.classId?.name} ${fee.classId?.section||''}` : null}
-                      {fee.scope === 'specific_student' ? `Student: ${fee.studentId?.admissionNumber}` : null}
-                    </span>
-                  )
-                },
-                { key: 'term', label: 'Term', render: (val) => <span className="text-secondary-600 capitalize text-xs">{val === 'all' ? 'All Terms' : `${val} term`}</span> },
-                { key: 'frequency', label: 'Frequency', render: (val) => <span className="text-secondary-600 capitalize text-xs">{(val||'').replace('_',' ')}</span> },
-                { key: 'status', label: 'Status', render: (_, fee) => (
-                    <button onClick={() => handleToggle(fee)}
-                      className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg transition-colors ${fee.isActive ? 'text-green-600 bg-green-50' : 'text-secondary-400 bg-secondary-100'}`}>
-                      {fee.isActive ? <FiToggleRight size={14} /> : <FiToggleLeft size={14} />}
-                      {fee.isActive ? 'Active' : 'Inactive'}
-                    </button>
-                  )
-                },
-                { key: 'actions', label: '', render: (_, fee) => (
-                    <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => openEdit(fee)} className="p-1.5 hover:bg-secondary-100 rounded-lg"><FiEdit2 size={14} className="text-secondary-500" /></button>
-                      <button onClick={() => { setDeleting(fee); setShowConfirm(true); }} className="p-1.5 hover:bg-red-50 rounded-lg"><FiTrash2 size={14} className="text-red-400" /></button>
-                    </div>
-                  )
-                }
-              ]}
-              data={filtered}
-            />
-          )}
-        </div>
-      )}
+      {/* Table */}
+      <Table
+        loading={loading}
+        emptyMessage="No fee structures found"
+        columns={[
+          { key: 'name', label: 'Fee Name', render: (_, fee) => (
+              <>
+                <p className="font-medium text-secondary-800">{fee.name}</p>
+                {fee.description && <p className="text-xs text-secondary-400 truncate max-w-48">{fee.description}</p>}
+              </>
+            )
+          },
+          { key: 'feeType', label: 'Type', render: (val) => <FeeTypeBadge type={val} /> },
+          { key: 'amount', label: 'Amount', render: (val) => <span className="font-bold text-primary-700">{formatCurrency(val)}</span> },
+          { key: 'scope', label: 'Scope', render: (_, fee) => (
+              <span className="text-secondary-600 text-xs">
+                {fee.scope === 'all_classes'      ? 'All Classes' : null}
+                {fee.scope === 'specific_class'   ? `${fee.classId?.name} ${fee.classId?.section||''}` : null}
+                {fee.scope === 'specific_student' ? `Student: ${fee.studentId?.admissionNumber}` : null}
+              </span>
+            )
+          },
+          { key: 'term', label: 'Term', render: (val) => <span className="text-secondary-600 capitalize text-xs">{val === 'all' ? 'All Terms' : `${val} term`}</span> },
+          { key: 'frequency', label: 'Frequency', render: (val) => <span className="text-secondary-600 capitalize text-xs">{(val||'').replace('_',' ')}</span> },
+          { key: 'status', label: 'Status', render: (_, fee) => (
+              <button onClick={() => handleToggle(fee)}
+                className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg transition-colors ${fee.isActive ? 'text-green-600 bg-green-50' : 'text-secondary-400 bg-secondary-100'}`}>
+                {fee.isActive ? <FiToggleRight size={14} /> : <FiToggleLeft size={14} />}
+                {fee.isActive ? 'Active' : 'Inactive'}
+              </button>
+            )
+          },
+          { key: 'actions', label: '', render: (_, fee) => (
+              <div className="flex items-center gap-1 justify-end">
+                <button onClick={() => openEdit(fee)} className="p-1.5 hover:bg-secondary-100 rounded-lg"><FiEdit2 size={14} className="text-secondary-500" /></button>
+                <button onClick={() => { setDeleting(fee); setShowConfirm(true); }} className="p-1.5 hover:bg-red-50 rounded-lg"><FiTrash2 size={14} className="text-red-400" /></button>
+              </div>
+            )
+          }
+        ]}
+        data={filtered}
+      />
 
       {pagination.pages > 1 && (
         <div className="flex justify-center gap-2">

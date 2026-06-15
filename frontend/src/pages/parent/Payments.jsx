@@ -272,29 +272,27 @@ export default function ParentPayments() {
       {payments.length > 0 && (
         <div className="space-y-3">
           <h2 className="section-title">Payment History</h2>
-          <div className="card overflow-hidden p-0">
-            <Table
-              columns={[
-                { key: 'date', label: 'Date', render: (_, p) => <span className="text-xs text-secondary-500">{formatDateTime(p.paidAt || p.createdAt)}</span> },
-                { key: 'feeType', label: 'Fee Type', render: (val) => <span className="capitalize text-secondary-700">{val}</span> },
-                { key: 'amount', label: 'Amount', render: (val) => <span className="font-bold text-primary-700">{formatCurrency(val)}</span> },
-                { key: 'method', label: 'Method', render: (_, p) => <span className="text-xs text-secondary-500 capitalize">{(p.paymentMethod||'').replace('_',' ')}</span> },
-                { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
-                { key: 'actions', label: '', render: (_, p) => (
-                    p.status === 'paid' && (
-                      <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => openReceipt(p)}
-                          className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View receipt">
-                          <FiEye size={14} className="text-blue-500" />
-                        </button>
-                      </div>
-                    )
+          <Table
+            columns={[
+              { key: 'date', label: 'Date', render: (_, p) => <span className="text-xs text-secondary-500">{formatDateTime(p.paidAt || p.createdAt)}</span> },
+              { key: 'feeType', label: 'Fee Type', render: (val) => <span className="capitalize text-secondary-700">{val}</span> },
+              { key: 'amount', label: 'Amount', render: (val) => <span className="font-bold text-primary-700">{formatCurrency(val)}</span> },
+              { key: 'method', label: 'Method', render: (_, p) => <span className="text-xs text-secondary-500 capitalize">{(p.paymentMethod||'').replace('_',' ')}</span> },
+              { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
+              { key: 'actions', label: '', render: (_, p) => (
+                  p.status === 'paid' && (
+                    <div className="flex items-center gap-1 justify-end">
+                      <button onClick={() => openReceipt(p)}
+                        className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors" title="View receipt">
+                        <FiEye size={14} className="text-blue-500" />
+                      </button>
+                    </div>
                   )
-                }
-              ]}
-              data={payments}
-            />
-          </div>
+                )
+              }
+            ]}
+            data={payments}
+          />
         </div>
       )}
 
