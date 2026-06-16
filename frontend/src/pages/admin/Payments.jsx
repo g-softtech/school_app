@@ -14,7 +14,7 @@ import Table from '../../components/common/Table';
 import api from '../../services/api';
 import { getStudents } from '../../services/studentService';
 import { getClasses } from '../../services/classService';
-import { formatCurrency, formatDateTime, getErrorMessage } from '../../utils/helpers';
+import { formatCurrency, formatDateTime, formatDate, getErrorMessage } from '../../utils/helpers';
 import { TERMS, SESSIONS } from '../../utils/constants';
 
 const FEE_TYPES = ['tuition','exam','sports','library','development','transport','hostel','pta','uniform','feeding','ict','other'];
