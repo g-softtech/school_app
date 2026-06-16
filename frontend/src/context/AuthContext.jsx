@@ -78,7 +78,6 @@ export function AuthProvider({ children }) {
           localStorage.removeItem('user');
           delete api.defaults.headers.common['Authorization'];
           setUser(null);
-          window.location.href = '/login';
         }, 1500);
       }
     }, ACCESS_TOKEN_LIFE_MS - REFRESH_BEFORE_MS);
@@ -132,7 +131,6 @@ export function AuthProvider({ children }) {
         if (error.response?.status === 401 && user) {
           clearTimers();
           logout();
-          window.location.href = '/login';
         }
         return Promise.reject(error);
       }
