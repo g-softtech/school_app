@@ -74,7 +74,7 @@ export default function Sidebar({ isOpen, onClose }) {
     try { await logoutUser(); } catch {}
     logout();
     toast.success('Logged out successfully');
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true });
   };
 
   return (
