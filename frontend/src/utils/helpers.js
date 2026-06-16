@@ -1,16 +1,32 @@
 export const formatDate = (date) => {
   if (!date) return 'N/A';
-  return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (err) {
+    return 'N/A';
+  }
 };
 
 export const formatDateTime = (date) => {
   if (!date) return 'N/A';
-  return new Date(date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (err) {
+    return 'N/A';
+  }
 };
 
 export const formatCurrency = (amount) => {
-  if (amount === null || amount === undefined) return '₦0';
-  return '₦' + Number(amount).toLocaleString('en-NG');
+  if (amount === null || amount === undefined || isNaN(Number(amount))) return '₦0';
+  try {
+    return '₦' + Number(amount).toLocaleString('en-NG');
+  } catch (err) {
+    return '₦0';
+  }
 };
 
 export const getInitials = (name) => {

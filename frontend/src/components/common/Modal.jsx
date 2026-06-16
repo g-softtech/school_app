@@ -41,7 +41,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
       {/* Panel */}
       <div
         ref={contentRef}
-        className={`relative bg-white rounded-2xl shadow-2xl w-full ${SIZES[size]} max-h-[90vh] flex flex-col modal-content`}
+        className={`relative bg-white rounded-2xl shadow-2xl w-full ${SIZES[size] || SIZES.md} max-h-[90vh] flex flex-col modal-content`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100 flex-shrink-0">

@@ -17,23 +17,26 @@ export default function Table({ columns, data, loading, emptyMessage = 'No data 
     </div>
   );
 
+  const safeColumns = columns || [];
+  const safeData = data || [];
+
   return (
     <>
       {/* Desktop Table View */}
       <div className="hidden md:block table-wrapper bg-white rounded-2xl shadow-sm border border-secondary-100 overflow-hidden">
         <table className="table-base w-full">
           <thead className="table-head bg-secondary-50">
-            <tr>{columns.map((c) => <th key={c.key} className="table-th text-left px-4 py-3 text-xs font-semibold text-secondary-500 uppercase tracking-wide border-b border-secondary-100">{c.label}</th>)}</tr>
+            <tr>{safeColumns.map((c) => <th key={c?.key ?? Math.random()} className="table-th text-left px-4 py-3 text-xs font-semibold text-secondary-500 uppercase tracking-wide border-b border-secondary-100">{c?.label ?? ''}</th>)}</tr>
           </thead>
           <tbody className="divide-y divide-secondary-50">
-            {data.length === 0
-              ? <tr><td colSpan={columns.length}>{emptyState}</td></tr>
-              : data.map((row, i) => (
+            {!(safeData.length)
+              ? <tr><td colSpan={safeColumns.length || 1}>{emptyState}</td></tr>
+              : safeData.map((row, i) => (
                   <React.Fragment key={i}>
                     <tr className="table-row hover:bg-secondary-50/50 transition-colors">
-                      {columns.map((c) => (
-                        <td key={c.key} className="table-td px-4 py-3">
-                          {c.render ? c.render(row[c.key], row) : row[c.key] ?? '—'}
+                      {safeColumns.map((c) => (
+                        <td key={c?.key ?? Math.random()} className="table-td px-4 py-3">
+                          {c?.render ? c.render(row?.[c.key], row) : row?.[c?.key] ?? '—'}
                         </td>
                       ))}
                     </tr>
@@ -47,22 +50,22 @@ export default function Table({ columns, data, loading, emptyMessage = 'No data 
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {data.length === 0 ? (
+        {!(safeData.length) ? (
           <div className="card p-0">{emptyState}</div>
         ) : (
-          data.map((row, i) => {
-            const isAction = (c) => c.key === 'actions' || c.key === 'action' || c.label === '' || c.label?.toLowerCase() === 'actions' || c.label?.toLowerCase() === 'action';
-            const dataCols = columns.filter(c => !isAction(c));
-            const actionCols = columns.filter(c => isAction(c));
+          safeData.map((row, i) => {
+            const isAction = (c) => c?.key === 'actions' || c?.key === 'action' || c?.label === '' || c?.label?.toLowerCase() === 'actions' || c?.label?.toLowerCase() === 'action';
+            const dataCols = safeColumns.filter(c => !isAction(c));
+            const actionCols = safeColumns.filter(c => isAction(c));
             
             return (
               <div key={i} className="card p-4 space-y-3">
                 <div className="space-y-3">
                   {dataCols.map((c) => (
-                    <div key={c.key} className="flex justify-between items-start gap-4 text-sm">
-                      <span className="text-secondary-500 font-medium whitespace-nowrap">{c.label}</span>
+                    <div key={c?.key ?? Math.random()} className="flex justify-between items-start gap-4 text-sm">
+                      <span className="text-secondary-500 font-medium whitespace-nowrap">{c?.label ?? ''}</span>
                       <span className="text-secondary-800 text-right break-words min-w-0 flex-1 overflow-hidden">
-                        {c.render ? c.render(row[c.key], row) : row[c.key] ?? '—'}
+                        {c?.render ? c.render(row?.[c.key], row) : row?.[c?.key] ?? '—'}
                       </span>
                     </div>
                   ))}
@@ -77,8 +80,8 @@ export default function Table({ columns, data, loading, emptyMessage = 'No data 
                 {actionCols.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-secondary-100 flex flex-wrap items-center justify-end gap-2 min-w-0 action-footer">
                     {actionCols.map(c => (
-                      <div key={c.key} className="min-w-0 flex flex-wrap justify-end gap-2">
-                        {c.render ? c.render(row[c.key], row) : row[c.key]}
+                      <div key={c?.key ?? Math.random()} className="min-w-0 flex flex-wrap justify-end gap-2">
+                        {c?.render ? c.render(row?.[c.key], row) : row?.[c?.key]}
                       </div>
                     ))}
                   </div>
