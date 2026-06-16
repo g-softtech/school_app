@@ -1,4 +1,5 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Spinner = () => (
@@ -10,11 +11,18 @@ const Spinner = () => (
 export default function RoleRoute({ allowedRoles }) {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login', { state: { from: location }, replace: true });
+    }
+  }, [user, loading, navigate, location]);
 
   if (loading) return <Spinner />;
 
-  // Not logged in — send to login, remember where they came from
-  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  // Not logged in — wait for useEffect to handle the redirect
+  if (!user) return null;
 
   // Logged in but wrong role
   if (!allowedRoles.includes(user.role)) return <Navigate to="/unauthorized" replace />;
