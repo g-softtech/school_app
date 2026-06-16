@@ -76,9 +76,8 @@ export default function ChangePassword() {
       setSuccess(true);
       toast.success('Password changed successfully!');
       // Log out after 2 seconds so they re-login with new password
-      setTimeout(() => {
         logoutUser();
-      }, 2500);
+        navigate('/login', { replace: true });
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {

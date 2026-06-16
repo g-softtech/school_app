@@ -13,11 +13,21 @@ export default function RoleRoute({ allowedRoles }) {
 
   if (loading) return <Spinner />;
 
+  const isProtectedRoute =
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/teacher') ||
+    location.pathname.startsWith('/student') ||
+    location.pathname.startsWith('/parent');
+
   // Not logged in — redirect to login, preserving the intended destination
-  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!user && isProtectedRoute) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   // Logged in but wrong role
-  if (!allowedRoles.includes(user.role)) return <Navigate to="/unauthorized" replace />;
+  if (user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   return <Outlet />;
 }

@@ -60,6 +60,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const handleLogout = async () => {
     await logoutUser();
+    navigate('/', { replace: true });
   };
 
   return (

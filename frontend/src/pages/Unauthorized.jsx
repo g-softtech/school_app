@@ -21,6 +21,7 @@ export default function Unauthorized() {
     } else {
       // Invalid / stale role — clear everything and go to login
       logoutUser();
+      navigate('/login', { replace: true });
     }
   };
 

@@ -72,6 +72,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const handleLogout = async () => {
     await logoutUser();
     toast.success('Logged out successfully');
+    navigate('/', { replace: true });
   };
 
   return (

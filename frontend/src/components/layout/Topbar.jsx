@@ -32,6 +32,7 @@ export default function Topbar({ onMenuClick, pageTitle }) {
 
   const handleLogout = async () => {
     await logoutUser();
+    navigate('/', { replace: true });
   };
 
   const handleChangePassword = () => {
