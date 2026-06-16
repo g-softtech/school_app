@@ -11,7 +11,7 @@ import PageSkeleton from '../../components/common/PageSkeleton';
 import { TERMS, SESSIONS } from '../../utils/constants';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 
-const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { SERVER_URL as API_URL } from '../../utils/constants';
 
 const TYPE_CONFIG = {
   lesson:     { label: 'Lesson Note',  icon: FiBook,      color: 'bg-blue-50 text-blue-600',   badge: 'bg-blue-100 text-blue-700' },

@@ -16,7 +16,12 @@ const app = express();
 
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet());
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  CLIENT_URL,
+];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.set('trust proxy', 1);
 
 if (NODE_ENV === 'development') app.use(morgan('dev'));

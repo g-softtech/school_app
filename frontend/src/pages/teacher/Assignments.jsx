@@ -10,7 +10,7 @@ import { TERMS, SESSIONS } from '../../utils/constants';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 
 const EMPTY_FORM = { classId: '', subjectId: '', title: '', question: '', dueDate: '', maxScore: '', term: 'first', session: '2025/2026' };
-const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { SERVER_URL as API_URL } from '../../utils/constants';
 
 export default function TeacherAssignments() {
   const [assignments, setAssignments] = useState([]);

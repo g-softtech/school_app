@@ -6,7 +6,7 @@ import FilePreview from '../../components/common/FilePreview';
 import FileUpload from '../../components/common/FileUpload';
 import Modal from '../../components/common/Modal';
 import { TERMS, SESSIONS } from '../../utils/constants';
-const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { SERVER_URL as API_URL } from '../../utils/constants';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 
 export default function StudentAssignments() {

@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { FiDownload, FiFile, FiFileText, FiImage, FiX, FiMaximize2 } from 'react-icons/fi';
 
-const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { SERVER_URL as API_URL } from '../../utils/constants';
 
 function getFileType(fileName = '') {
   const ext = fileName.split('.').pop()?.toLowerCase();

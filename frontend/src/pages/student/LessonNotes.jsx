@@ -7,7 +7,7 @@ import Modal from '../../components/common/Modal';
 import { TERMS, SESSIONS } from '../../utils/constants';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 
-const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { SERVER_URL as API_URL } from '../../utils/constants';
 
 export default function StudentLessonNotes() {
   const [notes, setNotes]     = useState([]);
