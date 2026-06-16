@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { getMe, refreshToken as refreshTokenApi, logoutUser as apiLogout } from '../services/authService';
 
@@ -16,7 +15,6 @@ export function AuthProvider({ children }) {
   const refreshTimer  = useRef(null);
   const warnTimer     = useRef(null);
   const tokenIssuedAt = useRef(null);
-  const navigate      = useNavigate();
 
   // ── Rehydrate from localStorage on mount ──────────────────────────────────
   useEffect(() => {
@@ -103,8 +101,7 @@ export function AuthProvider({ children }) {
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
     toast.dismiss('session-warning');
-    navigate('/', { replace: true });
-  }, [clearTimers, navigate]);
+  }, [clearTimers]);
 
   // ── Refresh user profile from server ──────────────────────────────────────
   const refreshUser = useCallback(async () => {
