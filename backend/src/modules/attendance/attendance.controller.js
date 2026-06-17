@@ -1,5 +1,5 @@
 const Attendance = require('../../models/Attendance');
-const redis = require('../../config/redis');
+const { getRedisClient } = require('../../config/redis');
 const mongoose = require('mongoose');
 
 // @desc    Get attendance for a specific class and date
@@ -124,6 +124,7 @@ exports.saveAttendance = async (req, res) => {
 
     // Cache Invalidation
     try {
+      const redis = getRedisClient();
       // Invalidate both new studentIds and any previous ones that may have been removed
       const allIdsToInvalidate = new Set([
         ...studentIds.map(id => id.toString()),

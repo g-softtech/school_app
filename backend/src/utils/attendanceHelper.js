@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
-const redis = require('../config/redis');
+const { getRedisClient } = require('../config/redis');
 
 const ATTENDANCE_STATUS_PRIORITY = {
   present: 3,
@@ -12,6 +12,7 @@ async function getStudentAttendanceStats(studentId, term, session) {
   const cacheKey = `attendance:stats:${session}:${term}:${studentId}`;
 
   try {
+    const redis = getRedisClient();
     const cached = await redis.get(cacheKey);
     if (cached) {
       return JSON.parse(cached);
@@ -101,6 +102,7 @@ async function getStudentAttendanceStats(studentId, term, session) {
 
   try {
     // Save to cache with 24h TTL asynchronously
+    const redis = getRedisClient();
     redis.set(cacheKey, JSON.stringify(result), 'EX', 86400).catch(err => {
       console.warn(`[REDIS] Error saving cache for ${cacheKey}.`, err.message);
     });
