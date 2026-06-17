@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiAlertTriangle, FiDownload } from 'react-icons/fi';
 import ReportCard from '../../components/common/ReportCard';
-import { downloadResultsPDF } from '../../utils/pdfHelper';
+import { printReportCards } from '../../utils/printHelper';
 import api from '../../services/api';
 
 export default function SharedResult() {
@@ -31,13 +31,13 @@ export default function SharedResult() {
 
   const handlePrint = () => {
     if (!data) return;
-    downloadResultsPDF({
+    printReportCards([{
       student:  data.student,
       results:  data.data || [],
       summary:  data.summary,
       term:     data.term,
       session:  data.session,
-    });
+    }]);
   };
 
   // ── Error state ─────────────────────────────────────────────────────────────

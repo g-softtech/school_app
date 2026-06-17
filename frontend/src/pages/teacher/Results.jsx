@@ -7,7 +7,7 @@ import Modal from '../../components/common/Modal';
 import ReportCard from '../../components/common/ReportCard';
 import { TERMS, SESSIONS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
-import { generateClassReportCard } from '../../utils/reportCardHelper';
+import { printReportCards } from '../../utils/printHelper';
 
 const GRADES = [
   { range: [75, 100], grade: 'A1', remark: 'Excellent' },
@@ -47,6 +47,7 @@ export default function TeacherResults() {
   const [search, setSearch]       = useState('');
   const [bulkFile, setBulkFile]   = useState(null);
   const [uploadingBulk, setUploadingBulk] = useState(false);
+  const [printingBatch, setPrintingBatch] = useState(false);
 
   // Report card modal state
   const [rcStudent,  setRcStudent]  = useState(null);  // { id, name }
@@ -185,29 +186,36 @@ export default function TeacherResults() {
           </button>
           {results.length > 0 && (
             <button
-              onClick={() => {
-                const byStudent = results.reduce((acc, r) => {
-                  const sid   = r.studentId?._id || r.studentId;
-                  const name  = r.studentId?.userId?.name || 'Unknown';
-                  const admNo = r.studentId?.admissionNumber || '';
-                  if (!acc[sid]) acc[sid] = { name, admissionNumber: admNo, results: [] };
-                  acc[sid].results.push({
-                    subjectName: r.subjectId?.name,
-                    ca: r.ca, exam: r.exam, total: r.total, grade: r.grade, remark: r.remark,
-                  });
-                  return acc;
-                }, {});
-                const cls = classes.find((c) => c._id === classFilter);
-                generateClassReportCard({
-                  className: cls ? `${cls.name} ${cls.section || ''}`.trim() : 'Class',
-                  students:  Object.values(byStudent),
-                  term,
-                  session,
-                });
+              onClick={async () => {
+                const sids = [...new Set(results.map(r => r.studentId?._id || r.studentId))];
+                if (!sids.length) return;
+                setPrintingBatch(true);
+                try {
+                  const fetched = await Promise.all(
+                    sids.map(id => getStudentResults(id, { term, session }).then(res => ({
+                      student: res.data.data?.[0]?.studentId || { _id: id }, // Fallback
+                      results: res.data.data || [],
+                      summary: res.data.summary,
+                      term,
+                      session
+                    })).catch(() => null))
+                  );
+                  const validData = fetched.filter(Boolean);
+                  if (validData.length > 0) {
+                    printReportCards(validData);
+                  } else {
+                    toast.error('Could not load report cards data.');
+                  }
+                } catch (err) {
+                  toast.error('Failed to generate batch report cards');
+                } finally {
+                  setPrintingBatch(false);
+                }
               }}
+              disabled={printingBatch}
               className="btn-secondary flex items-center gap-2 text-sm"
             >
-              <FiFileText size={14} /> Report Cards
+              <FiFileText size={14} /> {printingBatch ? 'Loading...' : 'Report Cards'}
             </button>
           )}
         </div>

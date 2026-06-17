@@ -9,7 +9,7 @@ import { getClasses } from '../../services/classService';
 import { getSubjects } from '../../services/subjectService';
 import { getClassResults, uploadResult, updateResult, getStudentResults } from '../../services/resultService';
 import { getErrorMessage } from '../../utils/helpers';
-import { generateClassReportCard } from '../../utils/reportCardHelper';
+import { printReportCards } from '../../utils/printHelper';
 import { TERMS, SESSIONS } from '../../utils/constants';
 
 const GRADE_CSS = {
@@ -116,6 +116,7 @@ export default function AdminResults() {
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [subjectData,       setSubjectData]       = useState({});
   const [existingResults,   setExistingResults]   = useState({});
+  const [printingBatch,     setPrintingBatch]     = useState(false);
 
   // Report card modal state
   const [rcStudent,   setRcStudent]   = useState(null);
@@ -224,65 +225,37 @@ export default function AdminResults() {
     }
   };
 
-  // ── Build report card — definitive fix ────────────────────────────────────────
   const handleReportCards = async () => {
     if (results.length === 0) {
       toast.error('No results loaded. Click Search first.');
       return;
     }
 
-    const cls = classes.find(c => c._id === classId);
-    const className = cls ? `${cls.name} ${cls.section || ''}`.trim() : 'Class';
-
-    // Fetch students fresh — guaranteed to have userId.name
-    let studentList = [];
+    const sids = [...new Set(results.map(r => r.studentId?._id || r.studentId))];
+    if (!sids.length) return;
+    
+    setPrintingBatch(true);
     try {
-      const stuRes = await getStudents({ classId, limit: 200 });
-      studentList = stuRes.data.data || [];
-    } catch {}
-
-    // studentMap: _id → { name, admNo }
-    const studentMap = {};
-    studentList.forEach(s => {
-      studentMap[String(s._id)] = {
-        name:  s.userId?.name || s.name || '—',
-        admNo: s.admissionNumber || '—',
-      };
-    });
-
-    // subjectMap: _id → name (from subjects already loaded on page mount)
-    const subjectMap = {};
-    subjects.forEach(s => { subjectMap[String(s._id)] = s.name; });
-
-    // Group results by student
-    const grouped = {};
-    results.forEach(r => {
-      const sid = String(r.studentId?._id || r.studentId || 'unknown');
-
-      const stuInfo   = studentMap[sid];
-      const name      = stuInfo?.name  || r.studentId?.userId?.name || '—';
-      const admNo     = stuInfo?.admNo || r.studentId?.admissionNumber || '—';
-
-      const rawSubId  = String(r.subjectId?._id || r.subjectId || '');
-      const subjectName = r.subjectId?.name || subjectMap[rawSubId] || '—';
-
-      if (!grouped[sid]) grouped[sid] = { name, admNo, results: [] };
-      grouped[sid].results.push({
-        subjectName,
-        ca:     r.ca    !== undefined ? r.ca    : '—',
-        exam:   r.exam  !== undefined ? r.exam  : '—',
-        total:  r.total !== undefined ? r.total : '—',
-        grade:  r.grade  || '—',
-        remark: r.remark || '—',
-      });
-    });
-
-    const reportStudents = Object.values(grouped);
-    if (reportStudents.length === 0) {
-      toast.error('Could not build report card data');
-      return;
+      const fetched = await Promise.all(
+        sids.map(id => getStudentResults(id, { term, session }).then(res => ({
+          student: res.data.data?.[0]?.studentId || { _id: id },
+          results: res.data.data || [],
+          summary: res.data.summary,
+          term,
+          session
+        })).catch(() => null))
+      );
+      const validData = fetched.filter(Boolean);
+      if (validData.length > 0) {
+        printReportCards(validData);
+      } else {
+        toast.error('Could not load report cards data.');
+      }
+    } catch (err) {
+      toast.error('Failed to generate batch report cards');
+    } finally {
+      setPrintingBatch(false);
     }
-    generateClassReportCard({ className, students: reportStudents, term, session });
   };
 
   // Class subjects
@@ -332,8 +305,9 @@ export default function AdminResults() {
         <div className="flex gap-2 flex-wrap">
           {results.length > 0 && (
             <button onClick={handleReportCards}
+              disabled={printingBatch}
               className="btn-secondary flex items-center gap-2 text-sm">
-              <FiFileText size={15} /> Report Cards
+              <FiFileText size={15} /> {printingBatch ? 'Loading...' : 'Report Cards'}
             </button>
           )}
           <button onClick={openUpload} className="btn-primary flex items-center gap-2 text-sm">

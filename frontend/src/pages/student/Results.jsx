@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { FiDownload, FiShare2 } from 'react-icons/fi';
 import { getStudentResults, generateShareToken } from '../../services/resultService';
-import { downloadResultsPDF } from '../../utils/pdfHelper';
+import { printReportCards } from '../../utils/printHelper';
 import { TERMS, SESSIONS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import api from '../../services/api';
@@ -50,7 +50,9 @@ export default function StudentResults() {
     } finally { setSharing(false); }
   };
 
-  const handlePrint = () => downloadResultsPDF({ student, results, summary, term, session });
+  const handlePrint = () => {
+    printReportCards([{ student, results, summary, term, session }]);
+  };
 
   return (
     <div className="space-y-6">
