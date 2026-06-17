@@ -44,8 +44,14 @@ exports.generateShareToken = catchAsync(async function(req, res, next) {
   });
 });
 
-// GET /api/results/share/:token — public, no auth required
-exports.viewSharedResult = catchAsync(async function(req, res, next) {
+// GET /api/results/share/:token — backward compat redirect to frontend page
+exports.viewSharedResult = catchAsync(async function(req, res) {
+  var token = req.params.token;
+  return res.redirect(302, CLIENT_URL + '/results/share/' + token);
+});
+
+// GET /api/results/share-data/:token — public, no auth, returns JSON for the SharedResult frontend page
+exports.viewSharedResultData = catchAsync(async function(req, res, next) {
   var token = req.params.token;
 
   var decoded;
@@ -77,9 +83,9 @@ exports.viewSharedResult = catchAsync(async function(req, res, next) {
   res.status(200).json({
     success: true,
     student: {
-      name:            student.userId ? student.userId.name : 'N/A',
+      userId:          { name: student.userId ? student.userId.name : 'N/A' },
       admissionNumber: student.admissionNumber,
-      class:           student.classId ? student.classId.name + (student.classId.section ? ' ' + student.classId.section : '') : 'N/A',
+      classId:         student.classId || null,
     },
     term:    decoded.term,
     session: decoded.session,
@@ -91,6 +97,6 @@ exports.viewSharedResult = catchAsync(async function(req, res, next) {
       failed:  results.length - passCount,
       attendance: attendanceStats
     },
-    results: results,
+    data: results,
   });
 });

@@ -10,6 +10,7 @@ import Academics     from '../../pages/public/Academics';
 import Admissions    from '../../pages/public/Admissions';
 import Gallery       from '../../pages/public/Gallery';
 import Contact       from '../../pages/public/Contact';
+import SharedResult  from '../../pages/public/SharedResult';
 
 // Dashboard layouts
 import AdminLayout   from '../../components/layout/AdminLayout';
@@ -101,6 +102,7 @@ export default function AppRoutes() {
       <Route path="/login"          element={<LoginRoute />} />
       <Route path="/unauthorized"   element={<Unauthorized />} />
       <Route path="/payment/verify" element={<PaymentVerify />} />
+      <Route path="/results/share/:token" element={<SharedResult />} />
 
       {/* ── Admin portal ─────────────────────────────────────────────────────── */}
       <Route element={<RoleRoute allowedRoles={['admin']} />}>

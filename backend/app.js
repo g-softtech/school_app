@@ -87,11 +87,12 @@ app.use('/api/bills',          require('./src/modules/studentBill/studentBill.ro
 var protect    = require('./src/middleware/authMiddleware');
 var restrictTo = require('./src/middleware/roleMiddleware');
 var { generateStudentIDCard } = require('./src/modules/students/idcard.controller');
-var { generateShareToken, viewSharedResult } = require('./src/modules/results/shareResult.controller');
+var { generateShareToken, viewSharedResult, viewSharedResultData } = require('./src/modules/results/shareResult.controller');
 
-app.get('/api/students/:id/idcard',  protect, restrictTo('admin'), generateStudentIDCard);
-app.get('/api/results/share/:token', viewSharedResult);
-app.post('/api/results/share-token', protect, generateShareToken);
+app.get('/api/students/:id/idcard',      protect, restrictTo('admin'), generateStudentIDCard);
+app.get('/api/results/share/:token',     viewSharedResult);
+app.get('/api/results/share-data/:token', viewSharedResultData);
+app.post('/api/results/share-token',     protect, generateShareToken);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.all('/{*path}', function(req, res, next) {

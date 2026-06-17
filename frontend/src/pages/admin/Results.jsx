@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import { FiUpload, FiSearch, FiFileText, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiUpload, FiSearch, FiFileText, FiCheckCircle, FiAlertCircle, FiEye } from 'react-icons/fi';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
+import ReportCard from '../../components/common/ReportCard';
 import { getStudents } from '../../services/studentService';
 import { getClasses } from '../../services/classService';
 import { getSubjects } from '../../services/subjectService';
-import { getClassResults, uploadResult, updateResult } from '../../services/resultService';
+import { getClassResults, uploadResult, updateResult, getStudentResults } from '../../services/resultService';
 import { getErrorMessage } from '../../utils/helpers';
 import { generateClassReportCard } from '../../utils/reportCardHelper';
 import { TERMS, SESSIONS } from '../../utils/constants';
@@ -116,6 +117,13 @@ export default function AdminResults() {
   const [subjectData,       setSubjectData]       = useState({});
   const [existingResults,   setExistingResults]   = useState({});
 
+  // Report card modal state
+  const [rcStudent,   setRcStudent]   = useState(null);
+  const [rcResults,   setRcResults]   = useState([]);
+  const [rcSummary,   setRcSummary]   = useState(null);
+  const [rcLoading,   setRcLoading]   = useState(false);
+  const [showRcModal, setShowRcModal] = useState(false);
+
   useEffect(() => {
     Promise.all([
       getClasses({ limit: 100 }),
@@ -197,6 +205,23 @@ export default function AdminResults() {
     setSaving(false);
     setShowModal(false);
     handleSearch();
+  };
+
+  const openReportCard = async (studentId, studentName) => {
+    setRcStudent({ id: studentId, name: studentName });
+    setRcResults([]);
+    setRcSummary(null);
+    setRcLoading(true);
+    setShowRcModal(true);
+    try {
+      const res = await getStudentResults(studentId, { term, session });
+      setRcResults(res.data.data || []);
+      setRcSummary(res.data.summary);
+    } catch (err) {
+      toast.error('Failed to load report card: ' + getErrorMessage(err));
+    } finally {
+      setRcLoading(false);
+    }
   };
 
   // ── Build report card — definitive fix ────────────────────────────────────────
@@ -382,7 +407,7 @@ export default function AdminResults() {
               <div className="overflow-x-auto w-full"><table className="w-full text-sm min-w-[600px]">
                 <thead>
                   <tr className="bg-secondary-50 border-b border-secondary-100">
-                    {['#','Student','Adm. No','Subjects','Average','Passed','Failed'].map(h => (
+                    {['#','Student','Adm. No','Subjects','Average','Passed','Failed', ''].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-secondary-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -397,6 +422,15 @@ export default function AdminResults() {
                       <td className="px-4 py-3 font-bold text-blue-600">{g.avg}%</td>
                       <td className="px-4 py-3"><Badge variant="success">{g.passed}</Badge></td>
                       <td className="px-4 py-3"><Badge variant={g.failed > 0 ? 'danger' : 'gray'}>{g.failed}</Badge></td>
+                      <td className="px-4 py-3">
+                         <button
+                           title="View Report Card"
+                           onClick={() => openReportCard(g.sid, g.name)}
+                           className="p-1.5 hover:bg-primary-50 rounded-lg transition-colors"
+                         >
+                           <FiEye size={14} className="text-primary-500" />
+                         </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -524,6 +558,27 @@ export default function AdminResults() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Report Card Modal */}
+      <Modal
+        isOpen={showRcModal}
+        onClose={() => setShowRcModal(false)}
+        title={rcStudent ? `Report Card — ${rcStudent.name}` : 'Report Card'}
+        size="xl"
+      >
+        <ReportCard
+          student={rcResults[0]?.studentId ? {
+            userId: { name: rcStudent?.name },
+            admissionNumber: rcResults[0]?.studentId?.admissionNumber,
+            classId: rcResults[0]?.classId,
+          } : null}
+          results={rcResults}
+          summary={rcSummary}
+          term={term}
+          session={session}
+          loading={rcLoading}
+        />
       </Modal>
     </div>
   );

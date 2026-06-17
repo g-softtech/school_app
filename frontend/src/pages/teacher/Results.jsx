@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import { FiAward, FiPlus, FiEdit2, FiTrash2, FiSearch, FiUpload, FiFileText } from 'react-icons/fi';
-import { uploadResult, bulkUpload, updateResult, deleteResult, getClassResults } from '../../services/resultService';
+import { FiAward, FiPlus, FiEdit2, FiTrash2, FiSearch, FiUpload, FiFileText, FiEye } from 'react-icons/fi';
+import { uploadResult, bulkUpload, updateResult, deleteResult, getClassResults, getStudentResults } from '../../services/resultService';
 import api from '../../services/api';
 import Modal from '../../components/common/Modal';
+import ReportCard from '../../components/common/ReportCard';
 import { TERMS, SESSIONS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import { generateClassReportCard } from '../../utils/reportCardHelper';
@@ -46,6 +47,13 @@ export default function TeacherResults() {
   const [search, setSearch]       = useState('');
   const [bulkFile, setBulkFile]   = useState(null);
   const [uploadingBulk, setUploadingBulk] = useState(false);
+
+  // Report card modal state
+  const [rcStudent,  setRcStudent]  = useState(null);  // { id, name }
+  const [rcResults,  setRcResults]  = useState([]);
+  const [rcSummary,  setRcSummary]  = useState(null);
+  const [rcLoading,  setRcLoading]  = useState(false);
+  const [showRcModal, setShowRcModal] = useState(false);
 
   useEffect(() => {
     Promise.allSettled([
@@ -106,6 +114,23 @@ export default function TeacherResults() {
     if (!window.confirm('Delete this result?')) return;
     try { await deleteResult(id); toast.success('Deleted'); fetchResults(); }
     catch (err) { toast.error(getErrorMessage(err)); }
+  };
+
+  const openReportCard = async (studentId, studentName) => {
+    setRcStudent({ id: studentId, name: studentName });
+    setRcResults([]);
+    setRcSummary(null);
+    setRcLoading(true);
+    setShowRcModal(true);
+    try {
+      const res = await getStudentResults(studentId, { term, session });
+      setRcResults(res.data.data || []);
+      setRcSummary(res.data.summary);
+    } catch (err) {
+      toast.error('Failed to load report card: ' + getErrorMessage(err));
+    } finally {
+      setRcLoading(false);
+    }
   };
 
   const handleBulkUpload = async () => {
@@ -235,8 +260,18 @@ export default function TeacherResults() {
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${GRADE_BG[r.grade] || 'bg-secondary-100 text-secondary-600'}`}>{r.grade}</span>
                     </td>
                     <td className={`px-4 py-3 text-sm ${['A1','B2','B3','C4','C5','C6'].includes(r.grade) ? 'text-green-700' : 'text-red-600'}`}>{r.remark}</td>
-                    <td className="px-4 py-3">
+                  <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button
+                          title="View Report Card"
+                          onClick={() => openReportCard(
+                            r.studentId?._id || r.studentId,
+                            r.studentId?.userId?.name || 'Student'
+                          )}
+                          className="p-1.5 hover:bg-primary-50 rounded-lg transition-colors"
+                        >
+                          <FiEye size={14} className="text-primary-500" />
+                        </button>
                         <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors"><FiEdit2 size={14} className="text-secondary-500" /></button>
                         <button onClick={() => handleDelete(r._id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"><FiTrash2 size={14} className="text-red-400" /></button>
                       </div>
@@ -303,6 +338,27 @@ export default function TeacherResults() {
             <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 min-w-0">{saving ? 'Saving…' : editResult ? 'Update' : 'Upload'}</button>
           </div>
         </div>
+      </Modal>
+
+      {/* Report Card Modal */}
+      <Modal
+        isOpen={showRcModal}
+        onClose={() => setShowRcModal(false)}
+        title={rcStudent ? `Report Card — ${rcStudent.name}` : 'Report Card'}
+        size="xl"
+      >
+        <ReportCard
+          student={rcResults[0]?.studentId ? {
+            userId: { name: rcStudent?.name },
+            admissionNumber: rcResults[0]?.studentId?.admissionNumber,
+            classId: rcResults[0]?.classId,
+          } : null}
+          results={rcResults}
+          summary={rcSummary}
+          term={term}
+          session={session}
+          loading={rcLoading}
+        />
       </Modal>
     </div>
   );
