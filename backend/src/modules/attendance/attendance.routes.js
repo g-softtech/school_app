@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../../middlewares/auth');
+const protect = require('../../middleware/authMiddleware');
+const restrictTo = require('../../middleware/roleMiddleware');
 const { getAttendance, saveAttendance } = require('./attendance.controller');
 
 router.use(protect);
-router.use(authorize('admin', 'teacher'));
+router.use(restrictTo('admin', 'teacher'));
 
 router.route('/')
   .get(getAttendance)
