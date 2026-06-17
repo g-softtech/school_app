@@ -138,7 +138,9 @@ exports.getStudentResults = catchAsync(async function(req, res, next) {
   var term      = req.query.term;
   var session   = req.query.session;
 
-  var student = await Student.findById(studentId).populate('userId', 'name');
+  var student = await Student.findById(studentId)
+    .populate('userId', 'name')
+    .populate('classId', 'name section');
   if (!student) return next(new ApiError(404, 'Student not found'));
 
   if (req.user.role === 'student') {
@@ -176,7 +178,11 @@ exports.getStudentResults = catchAsync(async function(req, res, next) {
 
   res.status(200).json({
     success: true,
-    student: { name: student.userId.name, admissionNumber: student.admissionNumber },
+    student: { 
+      name: student.userId.name, 
+      admissionNumber: student.admissionNumber,
+      classId: student.classId
+    },
     summary: {
       totalSubjects: results.length,
       passed:  passCount,

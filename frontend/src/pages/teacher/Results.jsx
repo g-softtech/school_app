@@ -193,7 +193,7 @@ export default function TeacherResults() {
                 try {
                   const fetched = await Promise.all(
                     sids.map(id => getStudentResults(id, { term, session }).then(res => ({
-                      student: res.data.data?.[0]?.studentId || { _id: id }, // Fallback
+                      student: res.data.student || { _id: id },
                       results: res.data.data || [],
                       summary: res.data.summary,
                       term,
