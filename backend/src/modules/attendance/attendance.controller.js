@@ -12,10 +12,17 @@ exports.getAttendance = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Class ID and date are required' });
     }
 
-    const queryTerm = term || req.user.term;
-    const querySession = session || req.user.session;
+    const queryTerm = term || (req.user && req.user.term);
+    const querySession = session || (req.user && req.user.session);
+
+    if (!queryTerm || !querySession) {
+      return res.status(400).json({ success: false, message: 'Term and session are required' });
+    }
 
     const queryDate = new Date(date);
+    if (isNaN(queryDate.getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid date format' });
+    }
     queryDate.setUTCHours(0, 0, 0, 0);
 
     const attendance = await Attendance.findOne({
@@ -45,10 +52,17 @@ exports.saveAttendance = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const queryTerm = term || req.user.term;
-    const querySession = session || req.user.session;
+    const queryTerm = term || (req.user && req.user.term);
+    const querySession = session || (req.user && req.user.session);
+
+    if (!queryTerm || !querySession) {
+      return res.status(400).json({ success: false, message: 'Term and session are required' });
+    }
 
     const queryDate = new Date(date);
+    if (isNaN(queryDate.getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid date format' });
+    }
     queryDate.setUTCHours(0, 0, 0, 0);
 
     // Validate records
