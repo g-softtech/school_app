@@ -54,6 +54,18 @@ exports.getAttendance = async (req, res) => {
 // @route   POST /api/attendance
 // @access  Private (Admin/Teacher)
 exports.saveAttendance = async (req, res) => {
+  // --- TEMP DEBUG: remove after identifying crash ---
+  console.log('[DEBUG] saveAttendance called');
+  console.log('[DEBUG] req.user:', req.user ? { _id: req.user._id, role: req.user.role } : 'UNDEFINED');
+  console.log('[DEBUG] req.body:', JSON.stringify({
+    classId: req.body?.classId,
+    date: req.body?.date,
+    term: req.body?.term,
+    session: req.body?.session,
+    recordsCount: Array.isArray(req.body?.records) ? req.body.records.length : req.body?.records,
+    firstRecord: req.body?.records?.[0] ?? null
+  }));
+  // --- END TEMP DEBUG ---
   try {
     const { classId, date, term, session, records } = req.body;
 
@@ -147,6 +159,8 @@ exports.saveAttendance = async (req, res) => {
       data: attendance
     });
   } catch (error) {
+    console.error('[DEBUG] saveAttendance CRASH:', error.message);
+    console.error('[DEBUG] stack:', error.stack);
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   }
 };
