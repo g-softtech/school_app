@@ -51,7 +51,7 @@ attendanceSchema.index({ classId: 1, date: 1, term: 1, session: 1 }, { unique: t
 attendanceSchema.index({ 'records.studentId': 1, term: 1, session: 1 });
 
 // Ensure date is always normalized to UTC midnight before saving
-attendanceSchema.pre('save', function (next) {
+attendanceSchema.pre('save', async function () {
   if (this.isModified('date')) {
     const d = new Date(this.date);
     d.setUTCHours(0, 0, 0, 0);
@@ -63,10 +63,9 @@ attendanceSchema.pre('save', function (next) {
     const studentIds = this.records.map(r => r.studentId.toString());
     const uniqueIds = new Set(studentIds);
     if (uniqueIds.size !== studentIds.length) {
-      return next(new Error('Duplicate studentId found in attendance records.'));
+      throw new Error('Duplicate studentId found in attendance records.');
     }
   }
-  next();
 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
