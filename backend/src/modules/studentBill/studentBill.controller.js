@@ -131,6 +131,14 @@ exports.getAllBills = async function(req, res) {
 
 exports.getStudentBills = async function(req, res) {
   try {
+    var Student = getStudent();
+    if (req.user.role !== 'admin') {
+      var student = await Student.findById(req.params.studentId);
+      if (!student) return bad(res, 404, 'Student not found');
+      if (req.user.role === 'parent' && String(student.parentId) !== String(req.user._id)) return bad(res, 403, 'Access denied');
+      if (req.user.role === 'student' && String(student.userId) !== String(req.user._id)) return bad(res, 403, 'Access denied');
+    }
+
     var StudentBill = getStudentBill();
     var filter = { studentId: req.params.studentId };
     if (req.query.session) filter.session = req.query.session;
@@ -147,9 +155,15 @@ exports.getBill = async function(req, res) {
   try {
     var StudentBill = getStudentBill();
     var bill = await StudentBill.findById(req.params.id)
-      .populate({ path:'studentId', select:'admissionNumber userId classId', populate:{path:'userId',select:'name email'} })
+      .populate({ path:'studentId', select:'admissionNumber userId classId parentId', populate:{path:'userId',select:'name email'} })
       .populate('classId','name section').populate('items.feeStructureId','name feeType allowInstallment minInstallment');
     if (!bill) return bad(res, 404, 'Bill not found');
+
+    if (req.user.role !== 'admin') {
+      if (req.user.role === 'parent' && String(bill.studentId.parentId) !== String(req.user._id)) return bad(res, 403, 'Access denied');
+      if (req.user.role === 'student' && String(bill.studentId.userId._id || bill.studentId.userId) !== String(req.user._id)) return bad(res, 403, 'Access denied');
+    }
+
     return ok(res, { data: bill });
   } catch (e) { return bad(res, 500, e.message); }
 };

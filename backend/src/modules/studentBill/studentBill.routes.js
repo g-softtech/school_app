@@ -8,7 +8,7 @@ router.use(protect);
 
 router.post('/generate',          restrictTo('admin'), ctrl.generateBills);
 router.post('/generate-single',   restrictTo('admin'), ctrl.generateSingleBill);
-router.get('/defaulters',         ctrl.getDefaulters);
+router.get('/defaulters',         restrictTo('admin'), ctrl.getDefaulters);
 router.get('/student/:studentId', ctrl.getStudentBills);
 router.get('/',                   restrictTo('admin'), ctrl.getAllBills);
 router.get('/:id',                ctrl.getBill);

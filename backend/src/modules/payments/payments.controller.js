@@ -258,6 +258,8 @@ exports.getStudentPayments = catchAsync(async (req, res, next) => {
 
   if (req.user.role === 'parent' && String(student.parentId) !== String(req.user._id))
     return next(new ApiError(403, 'Access denied'));
+  if (req.user.role === 'student' && String(student.userId) !== String(req.user._id))
+    return next(new ApiError(403, 'Access denied'));
 
   const filter = { studentId };
   if (req.query.term)    filter.term    = req.query.term;
@@ -297,6 +299,10 @@ exports.getReceipt = catchAsync(async (req, res, next) => {
 
   if (req.user.role === 'parent') {
     if (String(payment.studentId?.parentId) !== String(req.user._id))
+      return next(new ApiError(403, 'Access denied'));
+  }
+  if (req.user.role === 'student') {
+    if (String(payment.studentId?.userId?._id || payment.studentId?.userId) !== String(req.user._id))
       return next(new ApiError(403, 'Access denied'));
   }
 
