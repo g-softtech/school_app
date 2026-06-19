@@ -83,6 +83,9 @@ app.use('/api/timetable',         require('./src/modules/timetable/timetable.rou
 app.use('/api/fee-structures', require('./src/modules/feeStructure/feeStructure.routes'));
 app.use('/api/bills',          require('./src/modules/studentBill/studentBill.routes'));
 
+// ── Operations & Observability ────────────────────────────────────────────────
+app.use('/api/operations',     require('./src/modules/operations/operations.routes'));
+
 // ── ID card + shareable result ────────────────────────────────────────────────
 var protect    = require('./src/middleware/authMiddleware');
 var restrictTo = require('./src/middleware/roleMiddleware');

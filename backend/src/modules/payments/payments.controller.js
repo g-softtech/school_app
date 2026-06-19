@@ -83,6 +83,7 @@ async function allocatePaymentToBill(payment, ledgerServices, dbSession) {
     }
   }
 
+  bill.revision = (bill.revision || 0) + 1;
   await bill.save({ session: dbSession });
 
   // 3. Handle Overpayment
@@ -98,6 +99,22 @@ async function allocatePaymentToBill(payment, ledgerServices, dbSession) {
         notes: `Overpayment from Cash Receipt ${payment.reference}`
       });
     }
+  }
+
+  // 4. Create Outbox Event Atomically
+  const OutboxEvent = require('../../models/OutboxEvent');
+  const eventKey = `REBUILD_BILL:${bill._id}:${bill.revision}`;
+  try {
+    await OutboxEvent.create([{
+      type: 'REBUILD_BILL',
+      billId: bill._id,
+      eventKey: eventKey,
+      status: 'pending',
+      nextRetryAt: new Date()
+    }], { session: dbSession });
+  } catch (e) {
+    // Suppress duplicate key error to deduplicate event flooding
+    if (e.code !== 11000) throw e;
   }
 
   // Snapshot generation moved to finalizeReceiptSnapshot to execute after session commit

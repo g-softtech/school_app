@@ -143,6 +143,7 @@ exports.generateBills = async function(req, res) {
               else if (totalBalance === 0) status = 'paid';
               else if (totalPaid > 0) status = 'partial';
 
+              const nextRevision = (existingBill.revision || 0) + 1;
               bulkOps.push({
                 updateOne: {
                   filter: { _id: existingBill._id },
@@ -152,12 +153,14 @@ exports.generateBills = async function(req, res) {
                       totalAmount: totalAmount,
                       totalPaid: totalPaid,
                       totalBalance: totalBalance,
-                      status: status
+                      status: status,
+                      revision: nextRevision
+                    }
                     }
                   }
                 }
               });
-              generatedBillIds.push({ billId: existingBill._id.toString(), studentId: studentIdStr });
+              generatedBillIds.push({ billId: existingBill._id.toString(), studentId: studentIdStr, revision: nextRevision });
               results.push({ student: student.admissionNumber, billId: existingBill._id, totalAmount, status });
               updated++;
             } else {
@@ -209,7 +212,7 @@ exports.generateBills = async function(req, res) {
                 upsert: true
               }
             });
-            generatedBillIds.push({ billId: newBillId.toString(), studentId: studentIdStr });
+            generatedBillIds.push({ billId: newBillId.toString(), studentId: studentIdStr, revision: 0 });
             results.push({ student: student.admissionNumber, billId: newBillId, totalAmount, status });
             created++;
           }
@@ -218,6 +221,22 @@ exports.generateBills = async function(req, res) {
         // PHASE 3: WRITE (ATOMIC BULK)
         if (bulkOps.length > 0) {
           await StudentBill.bulkWrite(bulkOps, { session: dbSession });
+          
+          // PHASE 3.5: CREATE OUTBOX EVENTS ATOMICALLY
+          const OutboxEvent = require('../../models/OutboxEvent');
+          const outboxDocs = generatedBillIds.map(g => ({
+            type: 'REBUILD_BILL',
+            billId: g.billId,
+            eventKey: `REBUILD_BILL:${g.billId}:${g.revision}`,
+            status: 'pending',
+            nextRetryAt: new Date()
+          }));
+          try {
+            await OutboxEvent.insertMany(outboxDocs, { session: dbSession, ordered: false });
+          } catch (e) {
+            // Ignore duplicate key errors for identical event keys
+            if (e.code !== 11000) throw e;
+          }
         }
       });
     } finally {
@@ -257,26 +276,47 @@ exports.generateSingleBill = async function(req, res) {
       return { feeStructureId: fee._id, feeName: fee.name, feeType: fee.feeType,
                amount: fee.amount, discount: 0, netAmount: fee.amount, paid: 0, balance: fee.amount, status: 'unpaid' };
     });
-    var bill = await StudentBill.findOne({ studentId: studentId, session: session, term: term });
-    if (bill) {
-      var existing = bill.items.map(function(x) { return String(x.feeStructureId); });
-      items.filter(function(x) { return !existing.includes(String(x.feeStructureId)); }).forEach(function(ni) { bill.items.push(ni); });
-      await bill.save();
-    } else {
-      var prevBill = await StudentBill.findOne({ studentId: studentId }).sort({ session: -1, term: -1 });
-      var carryOverAmount = prevBill ? prevBill.totalBalance : 0;
-      
-      bill = new StudentBill({ 
-        studentId: studentId, classId: classId, session: session, term: term, 
-        items: items, carryOver: carryOverAmount, createdBy: req.user._id 
+    const mongoose = require('mongoose');
+    const dbSession = await mongoose.startSession();
+    try {
+      await dbSession.withTransaction(async () => {
+        var bill = await StudentBill.findOne({ studentId: studentId, session: session, term: term }).session(dbSession);
+        if (bill) {
+          var existing = bill.items.map(function(x) { return String(x.feeStructureId); });
+          items.filter(function(x) { return !existing.includes(String(x.feeStructureId)); }).forEach(function(ni) { bill.items.push(ni); });
+          bill.revision = (bill.revision || 0) + 1;
+          await bill.save({ session: dbSession });
+        } else {
+          var prevBill = await StudentBill.findOne({ studentId: studentId }).sort({ session: -1, term: -1 }).session(dbSession);
+          var carryOverAmount = prevBill ? prevBill.totalBalance : 0;
+          
+          bill = new StudentBill({ 
+            studentId: studentId, classId: classId, session: session, term: term, 
+            items: items, carryOver: carryOverAmount, createdBy: req.user._id 
+          });
+          await bill.save({ session: dbSession });
+        }
+        
+        const OutboxEvent = require('../../models/OutboxEvent');
+        try {
+          await OutboxEvent.create([{
+            type: 'REBUILD_BILL',
+            billId: bill._id,
+            eventKey: `REBUILD_BILL:${bill._id}:${bill.revision || 0}`,
+            status: 'pending',
+            nextRetryAt: new Date()
+          }], { session: dbSession });
+        } catch (e) {
+          if (e.code !== 11000) throw e;
+        }
       });
-      await bill.save();
+    } finally {
+      dbSession.endSession();
     }
     
-    const { enqueueSyncJob } = require('../../utils/syncQueue');
-    await enqueueSyncJob(bill._id.toString());
-    
-    return ok(res, { message: 'Bill generated successfully', data: bill }, 201);
+    // Have to retrieve the latest version of the bill for the response, or we could just refetch
+    var updatedBill = await StudentBill.findOne({ studentId: studentId, session: session, term: term });
+    return ok(res, { message: 'Bill generated successfully', data: updatedBill }, 201);
   } catch (e) { return bad(res, 500, e.message); }
 };
 

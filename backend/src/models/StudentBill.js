@@ -29,6 +29,7 @@ const studentBillSchema = new mongoose.Schema({
   isLocked:     { type: Boolean, default: false },
   revision:     { type: Number, default: 0 },
   createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  lastProcessedOutboxEventId: { type: mongoose.Schema.Types.ObjectId, ref: 'OutboxEvent', default: null }
 }, { timestamps: true });
 
 studentBillSchema.index({ studentId: 1, session: 1, term: 1 }, { unique: true });

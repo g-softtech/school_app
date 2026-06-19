@@ -44,6 +44,7 @@ import AdminSessions     from '../../pages/admin/Sessions';
 import AdminTimetable    from '../../pages/admin/Timetable';
 import AdminPromote      from '../../pages/admin/Promote';
 import AdminFinancialObservability from '../../pages/admin/FinancialObservability';
+import AdminBillingOperations  from '../../pages/admin/BillingOperations';
 
 // Teacher pages
 import TeacherDashboard   from '../../pages/teacher/Dashboard';
@@ -127,6 +128,7 @@ export default function AppRoutes() {
           <Route path="/admin/timetable"        element={<AdminTimetable />} />
           <Route path="/admin/promote"          element={<AdminPromote />} />
           <Route path="/admin/financial-observability" element={<AdminFinancialObservability />} />
+          <Route path="/admin/billing-operations" element={<AdminBillingOperations />} />
         </Route>
       </Route>
 

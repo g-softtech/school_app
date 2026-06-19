@@ -25,6 +25,7 @@ const NAV_ITEMS = {
     { to: '/admin/admissions',     icon: FiInbox,         label: 'Admissions'       },
     { to: '/admin/fee-structures', icon: FiPercent,       label: 'Fee Structures'   },
     { to: '/admin/billing',        icon: FiFileText,      label: 'Billing'          },
+    { to: '/admin/billing-operations', icon: FiActivity,  label: 'Billing Operations'},
     { to: '/admin/sessions',       icon: FiCalendar,      label: 'Sessions & Terms' },
     { to: '/admin/timetable',      icon: FiGrid,          label: 'Timetable'        },
     { to: '/admin/promote',        icon: FiArrowRight,    label: 'Class Promotion'  },

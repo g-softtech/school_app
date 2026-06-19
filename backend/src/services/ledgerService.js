@@ -224,45 +224,7 @@ exports.getLedgerServices = (session) => {
 
     
     rebuildBillBalances: async (billId, session) => {
-      const StudentBill = require('../models/StudentBill');
-      const BillAdjustment = require('../models/BillAdjustment');
-      const Payment = require('../models/Payment');
-
-      const bill = await StudentBill.findById(billId).session(session);
-      if (!bill) throw new Error('Bill not found');
-
-      // 1. Fetch all applied adjustments
-      const adjustments = await BillAdjustment.find({ billId, status: 'applied' }).session(session);
-      
-      // Compute adjustments per item
-      const itemAdjustments = {};
-      bill.items.forEach(item => {
-        itemAdjustments[item._id] = { discount: 0, penalty: 0 };
-      });
-
-      adjustments.forEach(adj => {
-        if (!itemAdjustments[adj.itemId]) return;
-        if (['discount', 'waiver', 'scholarship', 'transfer_in'].includes(adj.type)) {
-          itemAdjustments[adj.itemId].discount += adj.amount;
-        } else if (['penalty', 'transfer_out'].includes(adj.type)) {
-          itemAdjustments[adj.itemId].penalty += adj.amount;
-        }
-      });
-
-      // 2. Recalculate netAmount
-      bill.items.forEach(item => {
-        const adj = itemAdjustments[item._id];
-        item.discount = adj.discount;
-        // The netAmount is base amount + penalty - discount
-        item.netAmount = Math.max(0, item.amount + adj.penalty - adj.discount);
-        
-      });
-
-      // 3. Payment allocation is handled synchronously in Phase 2. 
-      // We do NOT replay or recalculate item.paid, totalPaid, or remaining balances here.
-
-      await bill.save({ session });
-      return bill;
+      // Obsolete method inside factory, removing to make standalone function
     },
 
     mergeParentWallets: async ({ sourceUserId, targetUserId, notes }) => {
@@ -327,3 +289,59 @@ exports.getLedgerServices = (session) => {
 
 exports.IdempotencyError = IdempotencyError;
 exports.LedgerLockedError = LedgerLockedError;
+
+exports.rebuildBillBalances = async (billId, outboxEventId) => {
+  const StudentBill = require('../models/StudentBill');
+  const BillAdjustment = require('../models/BillAdjustment');
+  const Payment = require('../models/Payment');
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const bill = await StudentBill.findById(billId).session(session);
+      if (!bill) throw new Error('Bill not found');
+
+      // FINANCIAL IDEMPOTENCY GUARD
+      if (outboxEventId && String(bill.lastProcessedOutboxEventId) === String(outboxEventId)) {
+        console.log(`[RebuildBill] Idempotency guard triggered. Event ${outboxEventId} already applied to Bill ${billId}. Skipping.`);
+        return;
+      }
+
+      // 1. Fetch all applied adjustments
+      const adjustments = await BillAdjustment.find({ billId, status: 'applied' }).session(session);
+      
+      // Compute adjustments per item
+      const itemAdjustments = {};
+      bill.items.forEach(item => {
+        itemAdjustments[item._id] = { discount: 0, penalty: 0 };
+      });
+
+      adjustments.forEach(adj => {
+        if (!itemAdjustments[adj.itemId]) return;
+        if (['discount', 'waiver', 'scholarship', 'transfer_in'].includes(adj.type)) {
+          itemAdjustments[adj.itemId].discount += adj.amount;
+        } else if (['penalty', 'transfer_out'].includes(adj.type)) {
+          itemAdjustments[adj.itemId].penalty += adj.amount;
+        }
+      });
+
+      // 2. Recalculate netAmount
+      bill.items.forEach(item => {
+        const adj = itemAdjustments[item._id];
+        item.discount = adj.discount;
+        // The netAmount is base amount + penalty - discount
+        item.netAmount = Math.max(0, item.amount + adj.penalty - adj.discount);
+      });
+
+      // 3. Mark the Outbox Event as processed atomically!
+      if (outboxEventId) {
+        bill.lastProcessedOutboxEventId = outboxEventId;
+      }
+
+      // 4. Save updates (triggers pre-save hook for status updates)
+      await bill.save({ session });
+    });
+  } finally {
+    session.endSession();
+  }
+};
