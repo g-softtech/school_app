@@ -8,7 +8,7 @@ import PageSkeleton from '../../components/common/PageSkeleton';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import Table from '../../components/common/Table';
 import Modal from '../../components/common/Modal';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 const STATUS_CONFIG = {
   unpaid: { color: 'text-red-700 bg-red-100', label: 'Unpaid' },
