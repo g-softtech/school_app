@@ -35,9 +35,13 @@ exports.generateBills = async function(req, res) {
     // SOFT GUARD: Check for existing bills and lock generation concurrently
     if (redis) {
       generationLockKey = `bill:generate:${classId}:${session}:${term}`;
-      const locked = await redis.set(generationLockKey, "1", "NX", "EX", 600);
-      if (!locked && !req.body.forceRegenerate) {
-        return bad(res, 409, 'Bill generation already in progress for this class and term.');
+      try {
+        const locked = await redis.set(generationLockKey, "1", "NX", "EX", 600);
+        if (!locked && !req.body.forceRegenerate) {
+          return bad(res, 409, 'Bill generation already in progress for this class and term.');
+        }
+      } catch (redisErr) {
+        console.warn('[Redis] Generation lock failed, proceeding without lock:', redisErr.message);
       }
     }
 
