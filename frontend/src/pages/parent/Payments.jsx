@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import {
   FiCreditCard, FiCheckCircle, FiClock, FiAlertCircle,
-  FiDownload, FiEye, FiArrowRight, FiFileText,
   FiDownload, FiEye, FiArrowRight, FiFileText, FiPrinter,
 } from 'react-icons/fi';
 import api from '../../services/api';
@@ -49,7 +48,6 @@ export default function ParentPayments() {
   const [walletBalance, setWalletBalance] = useState(0);
 
   // New checkout state
-  const [selectedItems, setSelectedItems] = useState({});
   const [useWallet, setUseWallet] = useState(false);
 
   const loadData = useCallback(async () => {
