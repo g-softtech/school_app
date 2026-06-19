@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/helpers';
 
 const PrintableReceipt = ({ receipt }) => {
   if (!receipt) return null;
