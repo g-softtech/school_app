@@ -68,6 +68,10 @@ exports.generateBills = async function(req, res) {
         await bill.save();
         created++;
       }
+      
+      const { enqueueSyncJob } = require('../../utils/syncQueue');
+      await enqueueSyncJob(bill._id.toString());
+      
       results.push({ student: student.admissionNumber, billId: bill._id, totalAmount: bill.totalAmount, status: bill.status });
     }
 
@@ -103,7 +107,11 @@ exports.generateSingleBill = async function(req, res) {
       bill = new StudentBill({ studentId: studentId, classId: classId, session: session, term: term, items: items, createdBy: req.user._id });
       await bill.save();
     }
-    return ok(res, { message: 'Bill generated', data: bill }, 201);
+    
+    const { enqueueSyncJob } = require('../../utils/syncQueue');
+    await enqueueSyncJob(bill._id.toString());
+    
+    return ok(res, { message: 'Bill generated successfully', data: bill }, 201);
   } catch (e) { return bad(res, 500, e.message); }
 };
 
@@ -168,61 +176,67 @@ exports.getBill = async function(req, res) {
   } catch (e) { return bad(res, 500, e.message); }
 };
 
-exports.applyDiscount = async function(req, res) {
+
+
+exports.applyAdjustment = async function(req, res) {
   try {
-    var StudentBill = getStudentBill();
-    var bill = await StudentBill.findById(req.params.id);
+    const StudentBill = getStudentBill();
+    const BillAdjustment = require('../../models/BillAdjustment');
+
+    const { itemId, type, amount, reason } = req.body;
+    if (!['discount', 'waiver', 'penalty', 'scholarship'].includes(type)) {
+      return bad(res, 400, 'Invalid adjustment type');
+    }
+
+    const bill = await StudentBill.findById(req.params.id);
     if (!bill) return bad(res, 404, 'Bill not found');
-    var item = bill.items.id(req.body.itemId);
+    
+    const item = bill.items.id(itemId);
     if (!item) return bad(res, 404, 'Line item not found');
-    var discount = Number(req.body.discount);
-    if (discount < 0 || discount > item.amount) return bad(res, 400, 'Invalid discount');
-    item.discount = discount; item.netAmount = item.amount - discount;
-    if (req.body.note) bill.discountNote = req.body.note;
-    await bill.save();
-    return ok(res, { message: 'Discount applied', data: bill });
-  } catch (e) { return bad(res, 500, e.message); }
+
+    if (amount <= 0) return bad(res, 400, 'Amount must be positive');
+
+    // WRITE FIRST: Create event only
+    await BillAdjustment.create({
+      billId: bill._id,
+      itemId,
+      type,
+      amount,
+      reason: reason || 'Manual adjustment',
+      approvedBy: req.user._id
+    });
+
+    // Increment Revision ONLY for Adjustments
+    const mongoose = require('mongoose');
+    await StudentBill.updateOne({ _id: bill._id }, { $inc: { revision: 1 } });
+
+    // BACKGROUND: Enqueue deterministic rebuild projection
+    const { enqueueSyncJob } = require('../../utils/syncQueue');
+    await enqueueSyncJob(bill._id.toString());
+
+    // RETURN FAST
+    return ok(res, { message: type + ' logged successfully. Pending rebuild.' });
+  } catch (e) {
+    return bad(res, e.message.includes('not found') ? 404 : 500, e.message);
+  }
 };
 
-exports.waiveItem = async function(req, res) {
-  try {
-    var StudentBill = getStudentBill();
-    var bill = await StudentBill.findById(req.params.id);
-    if (!bill) return bad(res, 404, 'Bill not found');
-    var item = bill.items.id(req.body.itemId);
-    if (!item) return bad(res, 404, 'Line item not found');
-    item.status = 'waived'; item.discount = item.amount; item.netAmount = 0;
-    await bill.save();
-    return ok(res, { message: 'Item waived', data: bill });
-  } catch (e) { return bad(res, 500, e.message); }
-};
 
-exports.setCarryOver = async function(req, res) {
-  try {
-    var StudentBill = getStudentBill();
-    var bill = await StudentBill.findById(req.params.id);
-    if (!bill) return bad(res, 404, 'Bill not found');
-    bill.carryOver = Number(req.body.carryOver) || 0;
-    await bill.save();
-    return ok(res, { data: bill });
-  } catch (e) { return bad(res, 500, e.message); }
-};
 
 exports.syncBill = async function(req, res) {
   try {
-    var StudentBill = getStudentBill(); var Payment = getPayment();
-    var bill = await StudentBill.findById(req.params.id);
+    const ledgerService = require('../../services/ledgerService');
+    const StudentBill = getStudentBill();
+    
+    const bill = await StudentBill.findById(req.params.id);
     if (!bill) return bad(res, 404, 'Bill not found');
-    var payments = await Payment.find({ studentId: bill.studentId, session: bill.session, term: bill.term, status: 'paid' });
-    var remaining = payments.reduce(function(s,p){ return s+p.amount; }, 0);
-    bill.items.forEach(function(item) {
-      if (item.status === 'waived') return;
-      var pay = Math.min(item.netAmount, remaining); item.paid = pay; remaining = Math.max(0, remaining-pay);
-    });
-    await bill.save();
-    return ok(res, { message: 'Bill synced', data: bill });
+
+    // Trigger deterministic rebuild projection
+    const finalBill = await ledgerService.rebuildBillBalances(bill._id);
+    return ok(res, { message: 'Bill reconstructed from events', data: finalBill });
   } catch (e) { return bad(res, 500, e.message); }
 };
+
 
 exports.deleteBill = async function(req, res) {
   try {
@@ -258,4 +272,112 @@ exports.getDefaulters = async function(req, res) {
       data:  bills,
     });
   } catch (e) { return bad(res, 500, e.message); }
+};
+
+exports.siblingTransfer = async function(req, res) {
+  try {
+    const { sourceBillId, targetBillId, sourceItemId, targetItemId, amount, reason } = req.body;
+    if (!sourceBillId || !targetBillId || !sourceItemId || !targetItemId || !amount) {
+      return bad(res, 400, 'sourceBillId, targetBillId, sourceItemId, targetItemId, and amount are required');
+    }
+
+    const StudentBill = getStudentBill();
+    const BillAdjustment = require('../../models/BillAdjustment');
+    const mongoose = require('mongoose');
+
+    const sourceBill = await StudentBill.findById(sourceBillId);
+    const targetBill = await StudentBill.findById(targetBillId);
+
+    if (!sourceBill || !targetBill) return bad(res, 404, 'Source or target bill not found');
+
+    const sourceItem = sourceBill.items.id(sourceItemId);
+    const targetItem = targetBill.items.id(targetItemId);
+
+    if (!sourceItem || !targetItem) return bad(res, 404, 'Source or target item not found');
+
+    const transferGroupId = new mongoose.Types.ObjectId().toString();
+
+    await BillAdjustment.create({
+      billId: sourceBillId,
+      itemId: sourceItemId,
+      type: 'transfer_out',
+      amount,
+      reason: reason || 'Sibling transfer to ' + targetBillId,
+      transferGroupId,
+      approvedBy: req.user._id
+    });
+
+    await BillAdjustment.create({
+      billId: targetBillId,
+      itemId: targetItemId,
+      type: 'transfer_in',
+      amount,
+      reason: reason || 'Sibling transfer from ' + sourceBillId,
+      transferGroupId,
+      approvedBy: req.user._id
+    });
+
+    await StudentBill.updateOne({ _id: sourceBillId }, { $inc: { revision: 1 } });
+    await StudentBill.updateOne({ _id: targetBillId }, { $inc: { revision: 1 } });
+
+    const { enqueueSyncJob } = require('../../utils/syncQueue');
+    await enqueueSyncJob(sourceBillId.toString());
+    await enqueueSyncJob(targetBillId.toString());
+
+    return ok(res, { message: 'Sibling transfer logged successfully. Both bills pending rebuild.' });
+
+  } catch (e) {
+    console.error('[siblingTransfer]', e.stack || e.message);
+    return bad(res, 500, e.message || 'Failed to process sibling transfer');
+  }
+};
+
+exports.reconcileBills = async function(req, res) {
+  try {
+    const { classId, session, term, billIds, reason } = req.body;
+    
+    const StudentBill = getStudentBill();
+    let filter = {};
+    
+    if (billIds && Array.isArray(billIds) && billIds.length > 0) {
+      filter._id = { $in: billIds };
+    } else {
+      if (!session && !term && !classId) {
+        return bad(res, 400, 'Must provide either billIds array OR session/term/classId filters');
+      }
+      if (session) filter.session = session;
+      if (term) filter.term = term;
+      if (classId) filter.classId = classId;
+    }
+
+    const bills = await StudentBill.find(filter).select('_id');
+    
+    if (!bills.length) {
+      return bad(res, 404, 'No bills found matching the given criteria');
+    }
+
+    const { enqueueSyncJob } = require('../../utils/syncQueue');
+    
+    for (const bill of bills) {
+      // Re-enqueue every matching bill. ZADD NX will inherently deduplicate
+      // if it's already in the queue, but if it's not, it will be queued for
+      // deterministic re-projection by the Phase 4 engine.
+      await enqueueSyncJob(bill._id.toString());
+    }
+
+    // Reason can optionally be logged to an audit table here if desired, 
+    // but the Phase 4 engine handles the raw correctness independently.
+    if (reason) {
+      console.log(`[Reconciliation] ${bills.length} bills enqueued. Reason: ${reason}`);
+    }
+
+    return ok(res, { 
+      message: 'Reconciliation triggered successfully', 
+      count: bills.length 
+    });
+
+  } catch (e) {
+    console.error('[reconcileBills]', e.stack || e.message);
+    return bad(res, 500, e.message || 'Failed to trigger reconciliation');
+  }
 };

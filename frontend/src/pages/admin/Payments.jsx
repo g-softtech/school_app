@@ -27,6 +27,7 @@ const STATUS_CONFIG = {
   awaiting_approval:  { label:'Awaiting Approval',  color:'bg-amber-100 text-amber-700',  icon: FiClock        },
   failed:             { label:'Failed',             color:'bg-red-100 text-red-600',      icon: FiAlertCircle  },
   cancelled:          { label:'Cancelled',          color:'bg-secondary-100 text-secondary-400', icon: FiX     },
+  reversed:           { label:'Reversed',           color:'bg-purple-100 text-purple-700', icon: FiAlertCircle },
 };
 
 const METHOD_LABELS = {
@@ -134,6 +135,15 @@ export default function AdminPayments() {
       await api.patch(`/payments/${activePayment?._id}/reject`, { reason });
       toast.success('Payment rejected');
       setShowApprove(false);
+      load();
+    } catch (err) { toast.error(getErrorMessage(err)); }
+  };
+
+  const handleReverse = async (payment) => {
+    if (!window.confirm(`Are you sure you want to reverse this ₦${payment.amount} payment? This will unallocate funds from the invoice and deduct any overpayment from the parent's wallet.`)) return;
+    try {
+      await api.post(`/payments/${payment._id}/reverse`);
+      toast.success('Payment successfully reversed and invoice updated');
       load();
     } catch (err) { toast.error(getErrorMessage(err)); }
   };
@@ -339,10 +349,15 @@ export default function AdminPayments() {
             },
             { key: 'actions', label: '', render: (_, p) => (
                 <div className="flex items-center gap-1 justify-end">
-                  {p?.status === 'completed' && (
-                    <button onClick={() => { setReceipt(p); setTimeout(printReceipt, 100); }} title="Print Receipt" className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500">
-                      <FiPrinter size={14} />
-                    </button>
+                  {p?.status === 'paid' && (
+                    <>
+                      <button onClick={() => { setReceipt(p); setTimeout(printReceipt, 100); }} title="Print Receipt" className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500">
+                        <FiPrinter size={14} />
+                      </button>
+                      <button onClick={() => handleReverse(p)} title="Reverse Payment" className="p-1.5 hover:bg-purple-100 rounded-lg text-purple-600">
+                        <FiTrash2 size={14} />
+                      </button>
+                    </>
                   )}
                   {p?.status === 'awaiting_approval' && (
                     <button onClick={() => { setActivePayment(p); setShowApprove(true); }} title="Review & Approve" className="p-1.5 hover:bg-amber-100 rounded-lg text-amber-600">

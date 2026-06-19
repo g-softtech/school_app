@@ -21,6 +21,7 @@ const NAV_ITEMS = {
     { to: '/admin/payments',       icon: FiCreditCard,    label: 'Payments'         },
     { to: '/admin/messages',       icon: FiMessageSquare, label: 'Messages'         },
     { to: '/admin/analytics',      icon: FiBarChart2,     label: 'Analytics'        },
+    { to: '/admin/financial-observability', icon: FiActivity, label: 'Financial Health' },
     { to: '/admin/admissions',     icon: FiInbox,         label: 'Admissions'       },
     { to: '/admin/fee-structures', icon: FiPercent,       label: 'Fee Structures'   },
     { to: '/admin/billing',        icon: FiFileText,      label: 'Billing'          },

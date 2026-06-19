@@ -12,9 +12,9 @@ router.get('/defaulters',         restrictTo('admin'), ctrl.getDefaulters);
 router.get('/student/:studentId', ctrl.getStudentBills);
 router.get('/',                   restrictTo('admin'), ctrl.getAllBills);
 router.get('/:id',                ctrl.getBill);
-router.patch('/:id/discount',     restrictTo('admin'), ctrl.applyDiscount);
-router.patch('/:id/waive',        restrictTo('admin'), ctrl.waiveItem);
-router.patch('/:id/carry-over',   restrictTo('admin'), ctrl.setCarryOver);
+router.patch('/:id/adjustment',   restrictTo('admin'), ctrl.applyAdjustment);
+router.post('/sibling-transfer',  restrictTo('admin'), ctrl.siblingTransfer);
+router.post('/reconcile',         restrictTo('admin'), ctrl.reconcileBills);
 router.post('/:id/sync',          restrictTo('admin'), ctrl.syncBill);
 router.delete('/:id',             restrictTo('admin'), ctrl.deleteBill);
 

@@ -20,15 +20,16 @@ const paymentSchema = new mongoose.Schema({
   session: { type: String, required: true, trim: true },
   status: {
     type: String,
-    enum: ['pending','paid','failed','cancelled','awaiting_approval'],
+    enum: ['pending','paid','failed','cancelled','awaiting_approval','reversed'],
     default: 'pending',
   },
   paymentMethod: {
     type: String,
-    enum: ['paystack','flutterwave','cash','bank_transfer','pos','cheque','scholarship'],
+    enum: ['paystack','flutterwave','cash','bank_transfer','pos','cheque','wallet'],
     default: 'paystack',
   },
   reference:     { type: String, unique: true, sparse: true },
+  glReference:   { type: String, index: true },
   paystackData:  { type: Object, default: null },
   receiptNumber: { type: String, unique: true, sparse: true },
   bankName:       { type: String, default: null },

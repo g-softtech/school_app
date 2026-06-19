@@ -21,10 +21,10 @@ const studentBillSchema = new mongoose.Schema({
   totalAmount:  { type: Number, default: 0 },
   totalPaid:    { type: Number, default: 0 },
   totalBalance: { type: Number, default: 0 },
-  carryOver:    { type: Number, default: 0 },
   status:       { type: String, enum: ['unpaid','partial','paid','overpaid'], default: 'unpaid' },
   discountNote: { type: String, default: null },
   isLocked:     { type: Boolean, default: false },
+  revision:     { type: Number, default: 0 },
   createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
@@ -36,7 +36,7 @@ studentBillSchema.index({ classId: 1, session: 1, term: 1 });
 studentBillSchema.pre('save', async function() {
   this.totalAmount  = this.items.reduce(function(s, i) { return s + i.netAmount; }, 0);
   this.totalPaid    = this.items.reduce(function(s, i) { return s + i.paid; }, 0);
-  this.totalBalance = this.totalAmount + this.carryOver - this.totalPaid;
+  this.totalBalance = this.totalAmount - this.totalPaid;
 
   if      (this.totalBalance <  0) this.status = 'overpaid';
   else if (this.totalBalance === 0) this.status = 'paid';

@@ -12,7 +12,7 @@ import PageSkeleton from '../../components/common/PageSkeleton';
 import Table from '../../components/common/Table';
 import {
   getAllBills, generateBills, getDefaulters,
-  syncBill, applyDiscount, waiveItem, deleteBill,
+  syncBill, applyAdjustment, deleteBill,
 } from '../../services/feeService';
 import { getClasses } from '../../services/classService';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
@@ -127,6 +127,32 @@ export default function AdminBilling() {
       toast.success('Bill synced');
       load();
     } catch (err) { toast.error(getErrorMessage(err)); }
+  };
+
+  
+  const handleApplyAdjustment = async (e) => {
+    e.preventDefault();
+    if (!adjForm.amount || Number(adjForm.amount) <= 0) {
+      return toast.error('Enter a valid amount');
+    }
+    setAdjusting(true);
+    try {
+      const res = await applyAdjustment(viewBill._id, {
+        itemId: adjItem._id,
+        type: adjForm.type,
+        amount: Number(adjForm.amount),
+        reason: adjForm.reason
+      });
+      toast.success(res.data.message || 'Adjustment saved. Sync pending...');
+      setShowAdjModal(false);
+      setAdjItem(null);
+      setAdjForm({ type: 'discount', amount: '', reason: '' });
+      // The backend is running async sync, user can manually click sync bill or refresh to see updates.
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setAdjusting(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -340,7 +366,14 @@ export default function AdminBilling() {
                 <p className="text-xs text-secondary-400">{viewBill.studentId?.admissionNumber} · {viewBill.classId?.name} {viewBill.classId?.section}</p>
                 <p className="text-xs text-secondary-400 capitalize">{viewBill.term} Term · {viewBill.session}</p>
               </div>
-              <StatusBadge status={viewBill.status} />
+              
+                <div className="flex gap-2 items-center">
+                  <button onClick={() => handleSync(viewBill._id)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
+                    <FiRefreshCw size={12} /> Sync Bill
+                  </button>
+                  <StatusBadge status={viewBill.status} />
+                </div>
+
             </div>
 
             {/* Totals */}
@@ -374,28 +407,59 @@ export default function AdminBilling() {
                       <p className="text-sm font-medium text-secondary-800 capitalize">{item.feeName}</p>
                       <p className="text-xs text-secondary-400 capitalize">{item.feeType}</p>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-secondary-800">{formatCurrency(item.netAmount)}</p>
-                      <p className={`text-xs font-medium capitalize ${
-                        item.status === 'paid'    ? 'text-green-600'  :
-                        item.status === 'partial' ? 'text-amber-600'  :
-                        item.status === 'waived'  ? 'text-secondary-400':
-                        'text-red-500'
-                      }`}>{item.status}</p>
-                    </div>
+                    
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-secondary-800">{formatCurrency(item.netAmount)}</p>
+                          <p className={`text-xs font-medium capitalize ${
+                            item.status === 'paid'    ? 'text-green-600'  :
+                            item.status === 'partial' ? 'text-amber-600'  :
+                            item.status === 'waived'  ? 'text-secondary-400':
+                            'text-red-500'
+                          }`}>{item.status}</p>
+                        </div>
+                        {item.status !== 'waived' && (
+                          <button onClick={() => { setAdjItem(item); setShowAdjModal(true); }} className="text-[10px] uppercase font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-2 py-0.5 rounded">Adjust</button>
+                        )}
+                      </div>
+
                   </div>
                 ))}
               </div>
             </div>
 
-            {viewBill.carryOver > 0 && (
-              <div className="flex justify-between p-3 bg-amber-50 rounded-xl text-sm border border-amber-100">
-                <span className="text-amber-700 font-medium">Carry-over from previous term</span>
-                <span className="font-bold text-amber-700">{formatCurrency(viewBill.carryOver)}</span>
-              </div>
-            )}
+
           </div>
         )}
+      </Modal>
+
+      
+      <Modal isOpen={showAdjModal} onClose={() => setShowAdjModal(false)} title="Apply Adjustment">
+        <form onSubmit={handleApplyAdjustment} className="space-y-4">
+          <div>
+            <label className="input-label">Type *</label>
+            <select className="input-field" value={adjForm.type} onChange={e => setAdjForm(p => ({ ...p, type: e.target.value }))}>
+              <option value="discount">Discount (Reduce Price)</option>
+              <option value="waiver">Waiver (Forgive Debt)</option>
+              <option value="penalty">Penalty (Increase Price)</option>
+              <option value="scholarship">Scholarship (Price Subsidy)</option>
+            </select>
+          </div>
+          <div>
+            <label className="input-label">Amount *</label>
+            <input type="number" min="1" step="any" required className="input-field" value={adjForm.amount} onChange={e => setAdjForm(p => ({ ...p, amount: e.target.value }))} />
+          </div>
+          <div>
+            <label className="input-label">Reason *</label>
+            <textarea required className="input-field" rows="2" value={adjForm.reason} onChange={e => setAdjForm(p => ({ ...p, reason: e.target.value }))} placeholder="Mandatory reason for audit log..."></textarea>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setShowAdjModal(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" disabled={adjusting} className="btn-primary">
+              {adjusting ? 'Saving...' : 'Apply Adjustment'}
+            </button>
+          </div>
+        </form>
       </Modal>
 
       <ConfirmDialog

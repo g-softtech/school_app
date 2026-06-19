@@ -15,8 +15,7 @@ export const generateSingleBill = (d)      => api.post('/bills/generate-single',
 export const getAllBills         = (p)      => api.get('/bills', { params: p });
 export const getStudentBills    = (id, p)  => api.get(`/bills/student/${id}`, { params: p });
 export const getBill            = (id)     => api.get(`/bills/${id}`);
-export const applyDiscount      = (id, d)  => api.patch(`/bills/${id}/discount`, d);
-export const waiveItem          = (id, d)  => api.patch(`/bills/${id}/waive`, d);
+export const applyAdjustment    = (id, d)  => api.patch(`/bills/${id}/adjustment`, d);
 export const setCarryOver       = (id, d)  => api.patch(`/bills/${id}/carry-over`, d);
 export const syncBill           = (id)     => api.post(`/bills/${id}/sync`);
 export const getDefaulters      = (p)      => api.get('/bills/defaulters', { params: p });

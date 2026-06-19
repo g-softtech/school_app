@@ -42,6 +42,11 @@ export default function ParentPayments() {
   const [paying,       setPaying]       = useState(false);
   const [filterSession,setFilterSession]= useState('2025/2026');
   const [filterTerm,   setFilterTerm]   = useState('');
+  const [walletBalance, setWalletBalance] = useState(0);
+
+  // New checkout state
+  const [selectedItems, setSelectedItems] = useState({});
+  const [useWallet, setUseWallet] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -52,16 +57,18 @@ export default function ParentPayments() {
       setChild(childData);
 
       if (childData?._id) {
-        const [billRes, payRes] = await Promise.all([
+        const [billRes, payRes, walletRes] = await Promise.all([
           api.get(`/bills/student/${childData._id}`, {
             params: { session: filterSession, term: filterTerm || undefined },
           }),
           api.get(`/payments/student/${childData._id}`, {
             params: { session: filterSession, term: filterTerm || undefined, limit: 50 },
           }),
+          api.get('/payments/wallet').catch(() => ({ data: { balance: 0 } }))
         ]);
         setBills(billRes.data.data || []);
         setPayments(payRes.data.data || []);
+        setWalletBalance(walletRes.data.balance || 0);
       }
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -74,30 +81,74 @@ export default function ParentPayments() {
 
   const openPayModal = (bill) => {
     setSelectedBill(bill);
-    setPayAmount(String(bill.totalBalance));
+    // Initialize selectedItems with all unpaid items checked
+    const items = {};
+    let initialAmount = 0;
+    bill.items?.forEach(item => {
+      if (item.status !== 'paid' && item.status !== 'waived') {
+        const bal = Math.max(0, item.netAmount - item.paid);
+        if (bal > 0) {
+          items[item._id] = true;
+          initialAmount += bal;
+        }
+      }
+    });
+    setSelectedItems(items);
+    setPayAmount(String(initialAmount));
+    setUseWallet(false);
     setShowPay(true);
   };
 
+  // Re-calculate payAmount when selectedItems change
+  useEffect(() => {
+    if (!selectedBill) return;
+    let total = 0;
+    selectedBill.items?.forEach(item => {
+      if (selectedItems[item._id]) {
+        total += Math.max(0, item.netAmount - item.paid);
+      }
+    });
+    setPayAmount(String(total));
+  }, [selectedItems, selectedBill]);
+
   const handlePayOnline = async () => {
-    if (!selectedBill || !payAmount || Number(payAmount) <= 0) {
-      toast.error('Enter a valid amount'); return;
+    const totalToPay = Number(payAmount);
+    if (!selectedBill || totalToPay <= 0) {
+      toast.error('Select at least one item to pay'); return;
     }
-    if (Number(payAmount) > selectedBill.totalBalance) {
-      toast.error('Amount cannot exceed the outstanding balance'); return;
-    }
+    
     setPaying(true);
     try {
-      // Get the primary unpaid fee type from the bill
-      const firstUnpaidItem = selectedBill.items?.find(i => i.status !== 'paid' && i.status !== 'waived');
-      const feeType = firstUnpaidItem?.feeType || 'tuition';
+      const selectedFeeTypes = selectedBill.items
+        ?.filter(i => selectedItems[i._id])
+        .map(i => i.feeType);
+      
+      const feeType = selectedFeeTypes.length === 1 ? selectedFeeTypes[0] : 'all';
+      const appliedWallet = (useWallet && walletBalance > 0) ? Math.min(walletBalance, totalToPay) : 0;
+      const remainder = totalToPay - appliedWallet;
 
+      // Full wallet checkout
+      if (remainder <= 0) {
+        await api.post('/payments/wallet-checkout', {
+          billId: selectedBill._id,
+          amount: appliedWallet,
+          feeType
+        });
+        toast.success('Payment completed using wallet balance!');
+        setShowPay(false);
+        loadData();
+        return;
+      }
+
+      // Initialize Paystack with or without wallet split
       const res = await api.post('/payments/initialize', {
         studentId:   child._id,
-        amount:      Number(payAmount),
+        amount:      remainder,
         feeType,
         term:        selectedBill.term,
         session:     selectedBill.session,
         billId:      selectedBill._id,
+        walletAmount: appliedWallet > 0 ? appliedWallet : undefined
       });
 
       // Redirect to Paystack
@@ -106,7 +157,6 @@ export default function ParentPayments() {
       }
     } catch (err) {
       toast.error(getErrorMessage(err));
-    } finally {
       setPaying(false);
     }
   };
@@ -317,17 +367,80 @@ export default function ParentPayments() {
                 Outstanding balance: {formatCurrency(selectedBill.totalBalance)}
               </p>
             </div>
+            {/* Itemized Selection */}
             <div>
-              <label className="input-label">Amount to Pay (₦)</label>
-              <input type="number" min="1" max={selectedBill.totalBalance}
-                value={payAmount}
-                onChange={e => setPayAmount(e.target.value)}
-                className="input-field text-lg font-bold"
-                placeholder={String(selectedBill.totalBalance)}
-              />
-              <p className="text-xs text-secondary-400 mt-1">
-                You can pay the full amount or a partial instalment
-              </p>
+              <p className="input-label mb-2">Select Items to Pay</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {selectedBill.items?.map(item => {
+                  const bal = Math.max(0, item.netAmount - item.paid);
+                  const isPaid = item.status === 'paid' || item.status === 'waived' || bal <= 0;
+                  return (
+                    <label key={item._id} className={`flex items-center justify-between p-2.5 rounded-lg border-2 cursor-pointer transition-colors ${
+                      isPaid ? 'bg-secondary-50 border-secondary-100 opacity-60 cursor-not-allowed' :
+                      selectedItems[item._id] ? 'bg-primary-50 border-primary-200' : 'bg-white border-secondary-100 hover:border-secondary-300'
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <input type="checkbox"
+                          disabled={isPaid}
+                          checked={!!selectedItems[item._id]}
+                          onChange={(e) => {
+                            setSelectedItems(prev => ({ ...prev, [item._id]: e.target.checked }));
+                          }}
+                          className="w-4 h-4 text-primary-600 rounded border-secondary-300"
+                        />
+                        <div>
+                          <p className="font-semibold text-sm text-secondary-800 capitalize">{item.feeName}</p>
+                          {isPaid && <p className="text-xs text-secondary-500">{item.status}</p>}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-sm text-secondary-800">{formatCurrency(bal)}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Total Input & Wallet Toggle */}
+            <div className="bg-secondary-50 p-3 rounded-xl space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-secondary-600">Total Selected</span>
+                <span className="text-lg font-bold text-secondary-800">
+                  {payAmount ? formatCurrency(Number(payAmount)) : '₦0'}
+                </span>
+              </div>
+              
+              {walletBalance > 0 && (
+                <div className="flex items-center justify-between pt-3 border-t border-secondary-200">
+                  <div>
+                    <p className="font-semibold text-sm text-secondary-800 flex items-center gap-1">
+                      <FiCreditCard size={14} className="text-primary-500" /> Apply Wallet Credit
+                    </p>
+                    <p className="text-xs text-secondary-500">Available: {formatCurrency(walletBalance)}</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={useWallet} onChange={e => setUseWallet(e.target.checked)} />
+                    <div className="w-9 h-5 bg-secondary-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-secondary-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-500"></div>
+                  </label>
+                </div>
+              )}
+              
+              {useWallet && walletBalance > 0 && (
+                <div className="flex justify-between items-center pt-2 text-sm">
+                  <span className="text-green-600 font-medium">- Wallet applied</span>
+                  <span className="font-bold text-green-600">
+                    -{formatCurrency(Math.min(walletBalance, Number(payAmount)))}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-between items-center font-bold text-lg pt-2">
+              <span>To Pay Now</span>
+              <span className="text-primary-700">
+                {formatCurrency(Math.max(0, Number(payAmount) - (useWallet ? walletBalance : 0)))}
+              </span>
             </div>
             <div className="p-3 bg-blue-50 rounded-xl text-xs text-blue-700 space-y-1">
               <p className="font-semibold">🔒 Secure Payment via Paystack</p>
