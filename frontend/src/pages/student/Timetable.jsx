@@ -16,7 +16,6 @@ const SUBJECT_COLORS = [
 export default function StudentTimetable() {
   const [student, setStudent]     = useState(null);
   const [timetable, setTimetable] = useState(null);
-  const [subjects, setSubjects]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [term, setTerm]           = useState('first');
   const [session, setSession]     = useState('2025/2026');
@@ -37,12 +36,8 @@ export default function StudentTimetable() {
     if (!student || !student.classId) return;
     setLoading(true);
     try {
-      const [ttRes, subRes] = await Promise.all([
-        getTimetable({ classId: student.classId._id || student.classId, session, term }),
-        api.get('/subjects', { params: { limit: 200 } }),
-      ]);
+      const ttRes = await getTimetable({ classId: student.classId._id || student.classId, session, term });
       setTimetable(ttRes.data.data);
-      setSubjects(subRes.data.data || []);
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -55,7 +50,10 @@ export default function StudentTimetable() {
   if (!student && loading) return <PageSkeleton type="dashboard" statCols={4} />;
 
   const subjectColorMap = {};
-  subjects.forEach((s, i) => { subjectColorMap[s._id] = SUBJECT_COLORS[i % SUBJECT_COLORS.length]; });
+  if (timetable?.periods) {
+    const uniqueSubjects = [...new Set(timetable.periods.map(p => p.subjectId?._id || p.subjectId).filter(Boolean))];
+    uniqueSubjects.forEach((s, i) => { subjectColorMap[s] = SUBJECT_COLORS[i % SUBJECT_COLORS.length]; });
+  }
 
   const periods = timetable?.periodConfig || [];
   const grid = {};
