@@ -7,7 +7,7 @@ const notificationSchema = new mongoose.Schema(
     message: { type: String, required: true, trim: true },
     type: {
       type: String,
-      enum: ['result', 'payment', 'assignment', 'announcement', 'general'],
+      enum: ['result', 'payment', 'assignment', 'announcement', 'general', 'system_alert'],
       default: 'general',
     },
     isRead:  { type: Boolean, default: false },

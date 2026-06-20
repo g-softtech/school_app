@@ -156,7 +156,6 @@ exports.generateBills = async function(req, res) {
                       status: status,
                       revision: nextRevision
                     }
-                    }
                   }
                 }
               });

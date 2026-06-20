@@ -5,7 +5,7 @@ import {
   FiBarChart2, FiCreditCard, FiMessageSquare,
   FiCalendar, FiFileText, FiAward, FiLogOut, FiCpu,
   FiActivity, FiList, FiUserCheck, FiGrid, FiArrowRight,
-  FiPercent, FiBell, FiInbox, FiDownload, FiCheckSquare,
+  FiPercent, FiBell, FiInbox, FiDownload, FiCheckSquare, FiAlertTriangle
 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { getInitials } from '../../utils/helpers';
@@ -26,6 +26,7 @@ const NAV_ITEMS = {
     { to: '/admin/fee-structures', icon: FiPercent,       label: 'Fee Structures'   },
     { to: '/admin/billing',        icon: FiFileText,      label: 'Billing'          },
     { to: '/admin/billing-operations', icon: FiActivity,  label: 'Billing Operations'},
+    { to: '/admin/alert-history',  icon: FiAlertTriangle, label: 'Alert History'    },
     { to: '/admin/sessions',       icon: FiCalendar,      label: 'Sessions & Terms' },
     { to: '/admin/timetable',      icon: FiGrid,          label: 'Timetable'        },
     { to: '/admin/promote',        icon: FiArrowRight,    label: 'Class Promotion'  },

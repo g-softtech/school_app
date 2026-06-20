@@ -1,0 +1,57 @@
+{
+  "slo": {
+    "name": "outbox_processing_success_rate",
+    "description": "Percentage of outbox jobs successfully processed without DLQ",
+    "targetSuccessRate": 0.995
+  },
+
+  "errorBudget": {
+    "window": "30d",
+    "maxAllowedFailureRate": 0.005
+  },
+
+  "burnRateWindows": [
+    {
+      "name": "fast_burn",
+      "windowMinutes": 5,
+      "multiplierThreshold": 14.4
+    },
+    {
+      "name": "medium_burn",
+      "windowMinutes": 60,
+      "multiplierThreshold": 6
+    },
+    {
+      "name": "slow_burn",
+      "windowMinutes": 240,
+      "multiplierThreshold": 3
+    }
+  ],
+
+  "evaluationIntervalSeconds": 60,
+
+  "stateTransitions": {
+    "frozenThreshold": "ANY_FAST_BURN_TRIGGERED",
+    "degradedThreshold": "ANY_MEDIUM_BURN_TRIGGERED",
+    "normalRecoveryRequirement": "ALL_WINDOWS_BELOW_THRESHOLD_FOR_15_MIN",
+    "frozenConfirmationWindowSeconds": 120,
+    "recoveryConfirmationWindowSeconds": 180
+  },
+
+  "guardrails": {
+    "maxDlqPerHour": 100,
+    "maxStuckJobs": 10,
+    "maxWorkerSilenceMinutes": 5
+  },
+
+  "breakGlass": {
+    "maxDurationMs": 600000,
+    "requiresReason": true,
+    "requiresAdminId": true,
+    "scopeOptions": {
+      "LOW_RISK": ["ackAlert"],
+      "MEDIUM_RISK": ["retryJob"],
+      "HIGH_RISK": ["replayDlq"]
+    }
+  }
+}

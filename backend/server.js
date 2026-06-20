@@ -4,6 +4,9 @@ require('dotenv').config();
 
 const app = require('./app');
 const connectDB = require('./config/db');
+const { startMetricsAggregator } = require('./src/workers/metricsAggregator');
+const sreEvaluatorWorker = require('./src/workers/sreEvaluatorWorker');
+
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -20,6 +23,9 @@ process.on('uncaughtException', (err) => {
 // ─── Connect to MongoDB, then start the HTTP server ──────────────────────────
 const startServer = async () => {
   await connectDB();
+  
+  startMetricsAggregator();
+  sreEvaluatorWorker.start();
 
   const server = app.listen(PORT, () => {
     console.log(`\n🚀  SmartSchool API running`);

@@ -45,6 +45,11 @@ import AdminTimetable    from '../../pages/admin/Timetable';
 import AdminPromote      from '../../pages/admin/Promote';
 import AdminFinancialObservability from '../../pages/admin/FinancialObservability';
 import AdminBillingOperations  from '../../pages/admin/BillingOperations';
+import AdminAlertHistory       from '../../pages/admin/AlertHistory';
+import SreDashboard from '../../pages/admin/sre/SreDashboard';
+import EmergencyGlassBox from '../../pages/admin/sre/EmergencyGlassBox';
+import FlightRecorder from '../../pages/admin/sre/FlightRecorder';
+import ExecutiveDashboard from '../../pages/admin/sre/ExecutiveDashboard';
 
 // Teacher pages
 import TeacherDashboard   from '../../pages/teacher/Dashboard';
@@ -129,6 +134,11 @@ export default function AppRoutes() {
           <Route path="/admin/promote"          element={<AdminPromote />} />
           <Route path="/admin/financial-observability" element={<AdminFinancialObservability />} />
           <Route path="/admin/billing-operations" element={<AdminBillingOperations />} />
+          <Route path="/admin/alert-history" element={<AdminAlertHistory />} />
+          <Route path="/admin/sre-dashboard" element={<SreDashboard />} />
+          <Route path="/admin/sre-glass-box" element={<EmergencyGlassBox />} />
+          <Route path="/admin/sre-flight-recorder" element={<FlightRecorder />} />
+          <Route path="/admin/executive-reliability" element={<ExecutiveDashboard />} />
         </Route>
       </Route>
 

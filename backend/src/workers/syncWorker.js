@@ -2,6 +2,8 @@ const { getRedisClient } = require('../config/redis');
 const ledgerService = require('../services/ledgerService');
 const OutboxEvent = require('../models/OutboxEvent');
 const crypto = require('crypto');
+const os = require('os');
+const WorkerNode = require('../models/WorkerNode');
 
 const WORKER_ID = 'pid-' + process.pid + '-' + crypto.randomBytes(4).toString('hex');
 
@@ -136,6 +138,22 @@ exports.start = () => {
     if (isRunning) return;
     isRunning = true;
     console.log(`[SyncWorker] Starting production Outbox Worker (${WORKER_ID})...`);
+    
+    let heartbeatInterval;
+    
+    // Heartbeat
+    heartbeatInterval = setInterval(async () => {
+        try {
+            await WorkerNode.updateOne(
+                { workerId: WORKER_ID },
+                { $set: { lastSeenAt: new Date(), hostname: os.hostname(), pid: process.pid } },
+                { upsert: true }
+            );
+        } catch (err) {
+            console.error('[SyncWorker] Heartbeat failed:', err);
+        }
+    }, 30000);
+
     processQueue();
 };
 

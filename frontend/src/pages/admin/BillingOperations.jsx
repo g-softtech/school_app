@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import API_URL from '../../utils/apiConfig';
+import { API_URL } from '../../utils/constants';
 
 export default function BillingOperations() {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [health, setHealth] = useState(null);
   const [events, setEvents] = useState({ data: [], pagination: {} });
+  const [alerts, setAlerts] = useState({ active: [], resolved: [] });
   const [loading, setLoading] = useState(true);
   
   // Table filters
@@ -27,22 +28,50 @@ export default function BillingOperations() {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       
-      const [metricsRes, healthRes, eventsRes] = await Promise.all([
+      const [metricsRes, healthRes, eventsRes, alertsRes] = await Promise.all([
         axios.get(`${API_URL}/operations/outbox/metrics`, config),
         axios.get(`${API_URL}/operations/outbox/health`, config),
         axios.get(`${API_URL}/operations/outbox/events`, {
           ...config,
           params: { page, status: statusFilter, billId: billIdFilter, workerId: workerIdFilter }
-        })
+        }),
+        axios.get(`${API_URL}/operations/outbox/alerts`, config)
       ]);
 
       setMetrics(metricsRes.data.data);
       setHealth(healthRes.data.data);
       setEvents(eventsRes.data.data);
+      setAlerts(alertsRes.data.data);
       setLoading(false);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
       setLoading(false);
+    }
+  };
+
+  const handleRetry = async (jobId) => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.post(`${API_URL}/operations/outbox/${jobId}/retry`, {}, config);
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Retry failed', err);
+      alert('Failed to retry job.');
+    }
+  };
+
+  const handleReplayDlq = async () => {
+    const reason = window.prompt('WARNING: Replaying DLQ can cause retry storms.\nEnter an audit reason to proceed:');
+    if (!reason) return;
+    
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      const res = await axios.post(`${API_URL}/operations/outbox/replay-dlq`, { reason }, config);
+      alert(res.data.message);
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Replay DLQ failed', err);
+      alert('Failed to replay DLQ.');
     }
   };
 
@@ -86,6 +115,37 @@ export default function BillingOperations() {
 
       {renderHealthBanner()}
 
+      {/* Active Alerts Panel */}
+      {alerts.active.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Active System Alerts</h2>
+          <div className="bg-white shadow rounded-lg border border-red-200 overflow-hidden">
+            <ul className="divide-y divide-red-100">
+              {alerts.active.map(alert => (
+                <li key={alert._id} className="p-4 hover:bg-red-50 transition">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-red-800">
+                        {alert.severity.replace('_', ' ').toUpperCase()} • {alert.alertKey}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Source: {alert.source} | Triggered: {new Date(alert.firstTriggeredAt).toLocaleString()} | Count: {alert.triggerCount}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        {alert.status}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <MetricCard title="Pending" value={metrics?.pending || 0} color="bg-blue-50 text-blue-700 border-blue-200" />
@@ -124,8 +184,16 @@ export default function BillingOperations() {
 
       {/* Outbox Events Table */}
       <div className="bg-white shadow rounded-lg border border-gray-200">
-        <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
+        <div className="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
           <h3 className="text-lg leading-6 font-medium text-gray-900">Event Browser</h3>
+          <button
+            onClick={handleReplayDlq}
+            className="bg-red-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-red-700 shadow-sm transition"
+          >
+            Replay All DLQ
+          </button>
+        </div>
+        <div className="px-4 pb-5 sm:px-6">
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-4">
             <select
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -170,11 +238,12 @@ export default function BillingOperations() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {events.data.length === 0 ? (
-                <tr><td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">No events found matching criteria.</td></tr>
+                <tr><td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">No events found matching criteria.</td></tr>
               ) : events.data.map((event) => (
                 <React.Fragment key={event.eventKey}>
                   <tr className={event.status === 'dead_letter' ? 'bg-red-50' : ''}>
@@ -191,11 +260,21 @@ export default function BillingOperations() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{event.attempts}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{event.workerId || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(event.updatedAt).toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {['pending', 'retry_wait', 'dead_letter'].includes(event.status) && (
+                        <button 
+                          onClick={() => handleRetry(event._id)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Retry
+                        </button>
+                      )}
+                    </td>
                   </tr>
                   {/* DLQ Drill Down */}
                   {event.status === 'dead_letter' && event.errorReason && (
                     <tr className="bg-red-50">
-                      <td colSpan="5" className="px-6 py-3 border-t-0 border-b border-red-200">
+                      <td colSpan="6" className="px-6 py-3 border-t-0 border-b border-red-200">
                         <div className="text-xs text-red-700 font-mono p-2 bg-red-100 rounded overflow-x-auto whitespace-pre-wrap">
                           <strong>Last Error ({new Date(event.lastErrorAt).toLocaleString()}):</strong><br/>
                           {event.errorReason}

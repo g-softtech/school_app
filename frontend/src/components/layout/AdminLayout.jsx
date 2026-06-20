@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import DashboardLayout from './DashboardLayout';
+import ActiveOverrideBanner from '../common/ActiveOverrideBanner';
 
 const PAGE_TITLES = {
   '/admin':                 'Dashboard',
@@ -25,6 +26,7 @@ export default function AdminLayout() {
 
   return (
     <DashboardLayout pageTitle={title}>
+      <ActiveOverrideBanner />
       <Outlet />
     </DashboardLayout>
   );

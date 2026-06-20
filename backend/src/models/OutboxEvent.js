@@ -20,7 +20,12 @@ const outboxEventSchema = new mongoose.Schema({
   lastAttemptAt: { type: Date, default: null },
   lastSuccessAt: { type: Date, default: null },
   lastErrorAt: { type: Date, default: null },
-  errorReason: { type: String, default: null }
+  errorReason: { type: String, default: null, index: true },
+  replayHistory: [{
+    type: { type: String, enum: ['retry', 'dlq_replay'] },
+    timestamp: { type: Date, default: Date.now },
+    adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  }]
 }, { timestamps: true });
 
 // Composite indexes for ultra-fast polling and lease sweeps
