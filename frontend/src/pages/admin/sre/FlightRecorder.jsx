@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { sreService } from '../../services/sreService';
+import { sreService } from '../../../services/sreService';
 import IncidentTimeline from './components/FlightRecorder/IncidentTimeline';
 import UnifiedEventStream from './components/FlightRecorder/UnifiedEventStream';
 
