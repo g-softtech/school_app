@@ -3,10 +3,13 @@ node_modules
 
 # Env files
 .env
+.env.local
 
 # Build files
 dist
 build
+.next
+.vercel
 
 # Logs
 npm-debug.log*
